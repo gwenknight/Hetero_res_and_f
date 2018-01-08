@@ -49,9 +49,9 @@ iniv<-c(98,1,1)
 #############********************************************** LOAD UP TO HERE ********************************************** 
 dt=0.1
 tsteps<-500*(1/dt)
-Sv20<-ec_funcf_mean_varsr(tsteps,home, c(0.2),iniv,M0,acqdistn,dt)
-Sv10<-ec_funcf_mean_varsr(tsteps,home, c(0.1),iniv,M0,acqdistn,dt)
-Sv05<-ec_funcf_mean_varsr(tsteps,home, c(0.05),iniv,M0,acqdistn,dt)
+Sv20<-ec_funcf_mean_varsr(tsteps,home, c(0.2),iniv,M0,acqdistn,dt,500)
+Sv10<-ec_funcf_mean_varsr(tsteps,home, c(0.1),iniv,M0,acqdistn,dt,500)
+Sv05<-ec_funcf_mean_varsr(tsteps,home, c(0.05),iniv,M0,acqdistn,dt,500)
 
 # What happens? 
 mm20<-c() ; mm10<-c() ; mm05<-c() 

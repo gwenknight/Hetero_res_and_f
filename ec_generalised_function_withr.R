@@ -92,7 +92,7 @@ ec_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist){
 
 ######****************************************************************************************** Difference equation set up taking in above
 ## Function which calculates population dynamics over time
-ec_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt){
+ec_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,kk){
   # Needs endp: length of simulation
   #       home: location
   #       vary: key parameters can change (epsilon, f and treatment differential (krdiff))
@@ -143,9 +143,9 @@ ec_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt){
     lambdas=lambdasv[i];lambdar=lambdarv[i]; kr = krv[i]
     #print(c("ks,kr",ks,kr,X$meanfit,lambdas))
     # Dynamics
-    U[i+1] =  U[i] + mu*(S[i]+R[i]) - (lambdas+lambdar)*U[i] + omega*ks*S[i] + omega*kr*R[i]
-    S[i+1] =  S[i] + lambdas*U[i] - (mu + omega*ks)*S[i] - eps * S[i]
-    R[i+1] =  R[i] + lambdar*U[i] - (mu + omega*kr)*R[i] + eps * S[i] 
+    U[i+1] =  U[i] + mu*(S[i]+R[i]) - (lambdas+lambdar)*U[i]/(U[i] + kk) + omega*ks*S[i] + omega*kr*R[i]
+    S[i+1] =  S[i] + lambdas*U[i]/(U[i] + kk) - (mu + omega*ks)*S[i] - eps * S[i]
+    R[i+1] =  R[i] + lambdar*U[i]/(U[i] + kk) - (mu + omega*kr)*R[i] + eps * S[i] 
     
     # Mean fitness update and foi
     X<-ec_meanfit_varsr(M,S[i]*eps,lambdar*U[i],omega,R[i]*(1 - mu - omega*kr),nfit,mres,acqdist)
