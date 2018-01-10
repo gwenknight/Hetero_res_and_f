@@ -8,7 +8,7 @@ ec_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist){
   # Needs bigM: Array of distribution  [susceptible rows, fitness columns, time]
   #       acq: number of acquisitions of resistant strains
   #       trans: number of transmissions of resistant strains
-  #       trate: treatment rate = w(1-ks)
+  #       trate: antibiotic exposure level
   #       nA: number with active TB
   #       n: number of fitness levels
   #       m: number of resistance levels
@@ -46,7 +46,7 @@ ec_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist){
     #*** How are the acquisitions distributed? Input
     new <- a * acqdist
     
-    #*** How are the transmissions distributed?
+    #*** How are the new growth bugs distributed?
     # now growth rate dependent on fitness and resistance 
     # FITNESS
     Mf<-colSums(M_new) # Proportions at each FITNESS level
@@ -55,11 +55,13 @@ ec_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist){
     #for(i in 1:length(Mf)){M_temp[,i] = M_temp[,i] * vf[i] / pastmean } # Updated matrix: colSums(M_new) = Mf_new
     M_temp <- t(apply(M_temp,1,function(.M_temp)mapply(.M_temp,vf, FUN="*"))/pastmean) # apply quicker! 
     # RESISTANCE
-    Mr<-rowSums(M_new) # Proportions at each RESISTANCE level
+    Mr<-rowSums(M_temp) # = rowSums(M_new) same # Proportions at each RESISTANCE level
     if(trans>0){ pastmean=sum( Mr*vs_rel ) }else{ pastmean = 1 }
     # update M_temp with fitness then resistance
     #for(i in 1:length(Mf)){M_temp[,i] = M_temp[,i] * vs_rel[i] / pastmean } # Updated matrix: colSums(M_new) = Mf_new
     M_temp <- t(apply(M_temp,1,function(.M_temp)mapply(.M_temp,vs_rel, FUN="*"))/pastmean) 
+    # As some may be zero (if antibiotic use too high - remember this is new growth)
+    M_temp <- M_temp/sum(M_temp)
     #?? does it matter to do fitness then resistance? don't think it makes a difference. 
     new = new + b*M_temp
     
@@ -69,7 +71,7 @@ ec_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist){
     #if(nA>0){M[,tt] = M[,tt-1]*( nA/(nA+acq+trans+react) ) + new * (acq+trans+react)/(nA+acq+trans+react)  ## PREVIOUS WITHOUT SUS
     if(nA>0){M_new = M_new * nA / (nA+acq+trans) + new * (acq+trans)/(nA+acq+trans) 
     }else{M_new =  new * (acq+trans)/(nA+acq+trans) }
-    print(c("M_new",sum(M_new)))
+    #print(c("M_new",sum(M_new)))
     #*** New matrix
     bigM[,,tt] <- M_new # Grab the appropriate matrix for this timestep
     
