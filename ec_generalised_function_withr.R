@@ -25,7 +25,7 @@ ec_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist){
   # MIN MIC = 0.1
   vs_mic <- seq(0.1,32,length.out = m) 
   # Vector of resistance levels
-  vs_rel <- pmax((vs_mic - omega),0)/vs_mic # constant 
+  vs_rel <- pmax((vs_mic - trate),0)/vs_mic # constant 
   
   # Which column of M? last that is non-zero plus one for this timestep
   sumM<-colSums(colSums(bigM,dims=1)) # Gives a vector of the sums over the array for each timestep
@@ -69,14 +69,14 @@ ec_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist){
     #if(nA>0){M[,tt] = M[,tt-1]*( nA/(nA+acq+trans+react) ) + new * (acq+trans+react)/(nA+acq+trans+react)  ## PREVIOUS WITHOUT SUS
     if(nA>0){M_new = M_new * nA / (nA+acq+trans) + new * (acq+trans)/(nA+acq+trans) 
     }else{M_new =  new * (acq+trans)/(nA+acq+trans) }
-    #print(c("M_new",sum(M_new)))
+    print(c("M_new",sum(M_new)))
     #*** New matrix
     bigM[,,tt] <- M_new # Grab the appropriate matrix for this timestep
     
     #*** Checks
     if(a+b > 1.01){print(c("Error in proportions"))}
-    if(any(colSums(M_new)>1.01)){print(c(sum(M[,which(colSums(M_new>1))]),"colsums",colSums(M_new,"ERROR in colsums of M")));break}
-    if(any(rowSums(M_new)>1.01)){print(c(sum(M[,which(rowSums(M_new>1))]),"rowsums",rowSums(M_new,"ERROR in rowsums of M")));break}
+    if(any(colSums(M_new)>1.001)){print(c(sum(M[,which(colSums(M_new>1))]),"colsums",colSums(M_new,"ERROR in colsums of M")));break}
+    if(any(rowSums(M_new)>1.001)){print(c(sum(M[,which(rowSums(M_new>1))]),"rowsums",rowSums(M_new,"ERROR in rowsums of M")));break}
     
     #*** Calculate mean fitness
     meanfit = sum(colSums(bigM[,,tt])*vf)
@@ -152,8 +152,8 @@ ec_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,kk){
     
     # Mean fitness update and foi
     X<-ec_meanfit_varsr(M,S[i]*eps,lambdar*U[i],omega,R[i]*(1 - mu - omega*kr),nfit,mres,acqdist)
-    if(omega > 1){sus_res = 0}else{sus_res = (1-omega)/1} # MIC Susceptible = 1
-    lambdasv[i+1] = sus_res * beta * S[i+1] / N; 
+    # MIC Susceptible = 1
+    lambdasv[i+1] = min(0,(1-omega)/1) * beta * S[i+1] / N; 
     lambdarv[i+1] = X$meanfit * X$meanres * beta * R[i+1] / N;   
     
     N = S[i+1] + R[i+1]
