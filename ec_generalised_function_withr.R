@@ -9,7 +9,7 @@ ec_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist){
   #       acq: number of acquisitions of resistant strains
   #       trans: number of transmissions of resistant strains
   #       trate: antibiotic exposure level
-  #       nA: number with active TB
+  #       nA: number with resistance
   #       n: number of fitness levels
   #       m: number of resistance levels
   #       acqdist: 2D distribution of new cases
@@ -25,7 +25,10 @@ ec_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist){
   # MIN MIC = 0.1
   vs_mic <- seq(0.1,32,length.out = m) 
   # Vector of resistance levels
-  vs_rel <- pmax((vs_mic - trate),0)/vs_mic # constant 
+  vs_rel <- pmax((vs_mic - trate),0)/vs_mic # constant ### SHOULD SUM TO 1? 
+  vs_rel <- vs_rel / sum(vs_rel)
+  
+  #print(c("baseline","vs_rel",vs_rel,"vf",vf))
   
   # Which column of M? last that is non-zero plus one for this timestep
   sumM<-colSums(colSums(bigM,dims=1)) # Gives a vector of the sums over the array for each timestep
@@ -53,15 +56,15 @@ ec_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist){
     if(trans>0){ pastmean=sum( Mf*vf ) }else{ pastmean = 1 }
     M_temp<-M_new
     #for(i in 1:length(Mf)){M_temp[,i] = M_temp[,i] * vf[i] / pastmean } # Updated matrix: colSums(M_new) = Mf_new
-    M_temp <- t(apply(M_temp,1,function(.M_temp)mapply(.M_temp,vf, FUN="*"))/pastmean) # apply quicker! 
+    M_temp <- t(t(M_temp) * vf / pastmean)
     # RESISTANCE
     Mr<-rowSums(M_temp) # = rowSums(M_new) same # Proportions at each RESISTANCE level
     if(trans>0){ pastmean=sum( Mr*vs_rel ) }else{ pastmean = 1 }
     # update M_temp with fitness then resistance
-    #for(i in 1:length(Mf)){M_temp[,i] = M_temp[,i] * vs_rel[i] / pastmean } # Updated matrix: colSums(M_new) = Mf_new
-    M_temp <- t(apply(M_temp,1,function(.M_temp)mapply(.M_temp,vs_rel, FUN="*"))/pastmean) 
+    #for(i in 1:length(Mf)){M_temp[i,] = M_temp[i,] * vs_rel[i] / pastmean } # Updated matrix: colSums(M_new) = Mf_new
+    M_temp <- vs_rel*M_temp/pastmean
     # As some may be zero (if antibiotic use too high - remember this is new growth)
-    M_temp <- M_temp/sum(M_temp)
+    # M_temp <- M_temp/sum(M_temp) ## don't need as sum(vs_rel) now = 1.
     #?? does it matter to do fitness then resistance? don't think it makes a difference. 
     new = new + b*M_temp
     
@@ -91,7 +94,7 @@ ec_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist){
   }
   
   #*** Output mean fitness, new distributions of active and latent 
-  return(list(meanfit=meanfit,vs=vs,bigM=bigM,meanres = meanres, vf=vf))
+  return(list(meanfit=meanfit,vs_rel=vs_rel,bigM=bigM,meanres = meanres, vf=vf))
 }
 
 
@@ -148,14 +151,15 @@ ec_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,kk){
     lambdas=lambdasv[i];lambdar=lambdarv[i]; kr = krv[i]
     #print(c("ks,kr",ks,kr,X$meanfit,lambdas))
     # Dynamics
-    U[i+1] =  U[i] + mu*(S[i]+R[i]) - (lambdas+lambdar)*(U[i]/(U[i] + kk)) + omega*ks*S[i] + omega*kr*R[i]
+    U[i+1] =  U[i] + mu*(S[i]+R[i]) - (lambdas+lambdar)*(U[i]/(U[i] + kk)) 
     S[i+1] =  S[i] + lambdas*(U[i]/(U[i] + kk)) - mu*S[i] - eps * S[i]
     R[i+1] =  R[i] + lambdar*(U[i]/(U[i] + kk)) - mu*R[i] + eps * S[i] 
     
     # Mean fitness update and foi
-    X<-ec_meanfit_varsr(M,S[i]*eps,lambdar*U[i],omega,R[i]*(1 - mu - omega*kr),nfit,mres,acqdist)
+    X<-ec_meanfit_varsr(M,S[i]*eps,lambdar*U[i]/(U[i] + kk),omega,R[i]*(1 - mu),nfit,mres,acqdist)
+
     # MIC Susceptible = 1
-    lambdasv[i+1] = min(0,(1-omega)/1) * beta * S[i+1] / N; 
+    lambdasv[i+1] = max(0,(1-omega)/1) * beta * S[i+1] / N; 
     lambdarv[i+1] = X$meanfit * X$meanres * beta * R[i+1] / N;   
     
     N = S[i+1] + R[i+1]
@@ -234,7 +238,7 @@ plot_diff_acd_output <- function(acqdistn,plots,num) {
   # acqdistn = matrix of acqdistn
   # plots = address
   # num = identifier
-  
+
   ### Plot necessities
   theme_set(theme_bw(base_size = 34))
   cbPalette <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
@@ -250,9 +254,9 @@ plot_diff_acd_output <- function(acqdistn,plots,num) {
   ggsave(paste(num,"_acqdistn_05.pdf",sep=""),width=14,height=10)
   
   # Initial conditions
-  Sv20<-ec_sourya_funcf_mean_varsr(tsteps,home, c(0.2),iniv,M0,acqdistn,dt)
-  Sv10<-ec_sourya_funcf_mean_varsr(tsteps,home, c(0.1),iniv,M0,acqdistn,dt)
-  Sv05<-ec_sourya_funcf_mean_varsr(tsteps,home, c(0.05),iniv,M0,acqdistn,dt)
+  Sv20<-ec_funcf_mean_varsr(tsteps,home, c(0.2),iniv,M0,acqdistn,dt)
+  Sv10<-ec_funcf_mean_varsr(tsteps,home, c(0.1),iniv,M0,acqdistn,dt)
+  Sv05<-ec_funcf_mean_varsr(tsteps,home, c(0.05),iniv,M0,acqdistn,dt)
   
   # What happens? 
   mm20<-c() ; mm10<-c() ; mm05<-c() 
@@ -353,6 +357,8 @@ plot_diff_acd_output <- function(acqdistn,plots,num) {
   #### Compare with and without fitness and resistance levels. 
   ### Range of omega
   setwd(home)
+  print(getwd())
+
   omegav<-c(0.2,0.1,0.05) * dt
   para<-read.csv("data/para_ecoli.csv",header=TRUE,check.names=F,stringsAsFactors = FALSE)[,1:2]
   for(i in 1:length(para[,1])){assign(para[i,1],para[i,2])}

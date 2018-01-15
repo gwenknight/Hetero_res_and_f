@@ -49,9 +49,13 @@ iniv<-c(98,1,1)
 #############********************************************** LOAD UP TO HERE ********************************************** 
 dt=0.1
 tsteps<-500*(1/dt)
-Sv20<-ec_funcf_mean_varsr(tsteps,home, c(0.2),iniv,M0,acqdistn,dt,500)
-Sv10<-ec_funcf_mean_varsr(tsteps,home, c(0.1),iniv,M0,acqdistn,dt,500)
-Sv05<-ec_funcf_mean_varsr(tsteps,home, c(0.05),iniv,M0,acqdistn,dt,500)
+omega1 <- 40
+omega2 <- 20
+omega3 <- 5
+Sv20<-ec_funcf_mean_varsr(tsteps,home, c(omega1),iniv,M0,acqdistn,dt,500)
+Sv10<-ec_funcf_mean_varsr(tsteps,home, c(omega2),iniv,M0,acqdistn,dt,500)
+Sv05<-ec_funcf_mean_varsr(tsteps,home, c(omega3),iniv,M0,acqdistn,dt,500)
+## NEED TO SPEED IT UP?? Fast for 5 x 5... ~6 sec on laptop 
 
 # What happens? 
 mm20<-c() ; mm10<-c() ; mm05<-c() 
@@ -94,11 +98,17 @@ pdf("Array_w_all.pdf",width=12,height=8)
 multiplot(p1,p4,cols=2)
 dev.off()
 
+
+
+
+
+
+
 ### Look at proportion in each of the 30 levels over time for each - facet = level
-mm20$omega = 20; mm10$omega = 10; mm05$omega = 5
+mm20$omega = omega1; mm10$omega = omega2; mm05$omega = omega3
 mega<-as.data.frame(rbind(mm20,mm10,mm05)); colnames(mega)<-c("x","y","z","time","omega")
 mega$level = c(seq(21,25,1),seq(16,20,1),seq(11,15,1),seq(6,10,1),seq(1,5,1))
-g<-ggplot(mega,aes(x=time,y=z,colour=factor(omega))) + geom_line(size=2) + facet_wrap( ~ level, ncol=5) +  scale_colour_manual(values=cbPalette,"Abx\nLevel",breaks=c(20,10,5),labels=c("0.2","0.1","0.05"))
+g<-ggplot(mega,aes(x=time,y=z,colour=factor(omega))) + geom_line(size=2) + facet_wrap( ~ level, ncol=5) +  scale_colour_manual(values=cbPalette,"Abx\nLevel",breaks=c(omega1,omega2, omega3),labels=c("0.2","0.1","0.05"))
 g<-g + scale_x_continuous("Generations",breaks=c(0,200,400)) + scale_y_continuous("Proportion at this level",breaks=c(0.25,0.75))+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
 g
 setwd(plots)
@@ -115,18 +125,23 @@ rrms<-as.data.frame(cbind(seq(1,ll,1)*dt,Sv05$S,Sv10$S,Sv20$S,2)); colnames(rrms
 rrm<-as.data.frame(rbind(rrmr,rrms))
 rrm2<-melt(rrm,id.vars=c("time","type")); rrm2[which(rrm2$type==1),"type"]<-"Resistant"; rrm2[which(rrm2$type==2),"type"]<-"Susceptible"
 g<-ggplot(rrm2,aes(x=time,y=value,colour=factor(variable))) + geom_line(size=2) + scale_x_continuous("Generations") + scale_y_continuous("Percentage with R")
-g<-g + scale_colour_manual("Abx\nLevel",breaks=c("20","10","05"),labels=c("0.2","0.1","0.05"),values = cbPalette) + facet_wrap(~type)
+g<-g + scale_colour_manual("Abx\nLevel",breaks=c("20","10","05"),labels=c(omega1, omega2,omega3),values = cbPalette) + facet_wrap(~type)
 g
 ggsave("r&s_overtime.pdf",width=12,height=8)
 
 # Time to dominance...
-t05<-min(intersect(intersect(which(rrmr[,2]>79.99),which(rrmr[,2]< 80.007)),which(floor(rrmr[,2])==80))*dt)
-t10<-min(intersect(intersect(which(rrmr[,3]>79.99),which(rrmr[,3]< 80.002)),which(floor(rrmr[,3])==80))*dt)
-t20<-min(intersect(intersect(which(rrmr[,4]>79.99),which(rrmr[,4]< 80.007)),which(floor(rrmr[,4])==80))*dt)
+#t05<-min(intersect(intersect(which(rrmr[,2]>79.99),which(rrmr[,2]< 80.007)),which(floor(rrmr[,2])==80))*dt)
+#t10<-min(intersect(intersect(which(rrmr[,3]>79.99),which(rrmr[,3]< 80.002)),which(floor(rrmr[,3])==80))*dt)
+#t20<-min(intersect(intersect(which(rrmr[,4]>79.99),which(rrmr[,4]< 80.007)),which(floor(rrmr[,4])==80))*dt)
+
+t05 <- rrmr[min(which(rrmr[,2] > 50)),"time"]
+t10 <- rrmr[min(which(rrmr[,3] > 50)),"time"]
+t20 <- rrmr[min(which(rrmr[,4] > 50)),"time"]
 
 mm20_2<-mm20;mm10_2<-mm10;mm05_2<-mm05
-mm20_2$t<-mm20_2$t/t20;mm10_2$t<-mm10_2$t/t10;mm05_2$t<-mm05_2$t/t05
-mega_2<-as.data.frame(rbind(mm20_2,mm10_2,mm05_2)); colnames(mega_2)<-c("x","y","z","time","omega")
+mm20_2$t<-mm20_2$t/t20;mm10_2$t<-mm10_2$t/t10;# mm05_2$t<-mm05_2$t/t05 no t05 at moment
+mega_2<-as.data.frame(rbind(mm20_2,mm10_2)) #,mm05_2)); 
+colnames(mega_2)<-c("x","y","z","time","omega")
 mega_2$level = c(seq(21,25,1),seq(16,20,1),seq(11,15,1),seq(6,10,1),seq(1,5,1))
 g<-ggplot(mega_2,aes(x=time,y=z,colour=factor(omega))) + geom_line(size=2) + facet_wrap( ~ level, ncol=5, scales = "free") + scale_colour_manual("Abx\nLevel",breaks=c(20,10,5),labels=c("0.2","0.1","0.05"),values = cbPalette)
 g<-g + scale_x_continuous("Time to full resistance") + scale_y_continuous("Proportion at this level")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
@@ -136,18 +151,19 @@ ggsave("mega_normtodom.pdf")
 
 # Time to full resistance and fitness
 w<-which(mega$level==5); 
-t05a<-min(intersect(which(mega[w,"omega"]==5),which(mega[w,"z"]>0.95)))
-t10a<-min(intersect(which(mega[w,"omega"]==10),which(mega[w,"z"]>0.95)))
-t20a<-min(intersect(which(mega[w,"omega"]==20),which(mega[w,"z"]>0.95)))
+t05a<-min(intersect(which(mega[w,"omega"]==omega1),which(mega[w,"z"]>0.5)))
+t10a<-min(intersect(which(mega[w,"omega"]==omega2),which(mega[w,"z"]>0.4)))
+t20a<-min(intersect(which(mega[w,"omega"]==omega3),which(mega[w,"z"]>0.4)))
 
-t05<-mega[w[t05a],"time"]; t10<-mega[w[t10a],"time"]; t20<-mega[w[t20a],"time"]
+#t05<-mega[w[t05a],"time"]; 
+t10<-mega[w[t10a],"time"]; t20<-mega[w[t20a],"time"]
 
-mm20_2<-mm20;mm10_2<-mm10;mm05_2<-mm05
-mm20_2$t<-mm20_2$t/t20;mm10_2$t<-mm10_2$t/t10;mm05_2$t<-mm05_2$t/t05
+mm20_2<-mm20;mm10_2<-mm10;#mm05_2<-mm05
+mm20_2$t<-mm20_2$t/t20;mm10_2$t<-mm10_2$t/t10;#mm05_2$t<-mm05_2$t/t05
 mega_2<-as.data.frame(rbind(mm20_2,mm10_2,mm05_2)); colnames(mega_2)<-c("x","y","z","time","omega")
 mega_2$level = c(seq(21,25,1),seq(16,20,1),seq(11,15,1),seq(6,10,1),seq(1,5,1))
 theme_set(theme_bw(base_size = 12)); 
-g<-ggplot(mega_2,aes(x=time,y=z,colour=factor(omega))) + geom_line(size=2) + facet_wrap( ~ level, ncol=5, scales = "free") + scale_colour_manual("Abx\nLevel",breaks=c(20,10,5),labels=c("0.2","0.1","0.05"),values = cbPalette)
+g<-ggplot(mega_2,aes(x=time,y=z,colour=factor(omega))) + geom_line(size=2) + facet_wrap( ~ level, ncol=5, scales = "free") + scale_colour_manual("Abx\nLevel",breaks=c(omega1, omega2, omega3),values = cbPalette)
 g<-g + scale_x_continuous("Time to full resistance") + scale_y_continuous("Proportion at this level")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
 g
 setwd(plots)
