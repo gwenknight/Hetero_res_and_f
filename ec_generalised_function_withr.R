@@ -362,7 +362,7 @@ plot_diff_acd_output <- function(acqdistn,plots,num) {
   
   theme_set(theme_bw(base_size = 14))
   g<-g+ facet_wrap( ~ level,scales = "free", ncol=5)+ scale_y_continuous("Proportion at this level")
-  ggsave("mega_freescale.pdf")
+  ggsave(paste(num,"_mega_freescale.pdf",sep=""))
   
   ### Look at change in R & S over time
   theme_set(theme_bw(base_size = 34))
@@ -373,7 +373,7 @@ plot_diff_acd_output <- function(acqdistn,plots,num) {
   g<-ggplot(rrm2,aes(x=time,y=value,colour=factor(variable))) + geom_line(size=2) + scale_x_continuous("Generations") + scale_y_continuous("Percentage with R")
   g<-g + scale_colour_manual("Abx\nLevel",breaks=c("20","10","05"),labels=c(omega1, omega2,omega3),values = cbPalette) + facet_wrap(~type)
   g
-  ggsave("r&s_overtime.pdf",width=12,height=8)
+  ggsave(paste(num,"_r&s_overtime.pdf",sep=""),width=12,height=8)
   
   # Time to dominance...
   #t05<-min(intersect(intersect(which(rrmr[,2]>79.99),which(rrmr[,2]< 80.007)),which(floor(rrmr[,2])==80))*dt)
@@ -393,7 +393,7 @@ plot_diff_acd_output <- function(acqdistn,plots,num) {
   g<-g + scale_x_continuous("Time to full resistance") + scale_y_continuous("Proportion at this level")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
   g
   setwd(plots)
-  ggsave("mega_normtodom.pdf")
+  ggsave(paste(num,"_mega_normtodom.pdf",sep=""))
   
   # Time to full resistance and fitness
   w<-which(mega$level==5); 
@@ -413,7 +413,7 @@ plot_diff_acd_output <- function(acqdistn,plots,num) {
   g<-g + scale_x_continuous("Time to full resistance") + scale_y_continuous("Proportion at this level")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
   g
   setwd(plots)
-  ggsave("mega_normtofullR.pdf",width=12,height=8)
+  ggsave(paste(num,"_mega_normtofullR.pdf",sep=""),width=12,height=8)
   
   # Plot proportions in each fitness / resistance level over time
   pp<-c();
@@ -433,7 +433,7 @@ plot_diff_acd_output <- function(acqdistn,plots,num) {
   g # Suggests that although v similar proportions in the most fit fewer are in the higher resistance levels with low level antibiotics use. In fact with this model
   # the same rate of selection for no cost mutations is seen whether there is high or low anitbiotic use 
   setwd(plots)
-  ggsave("f&r_overtime.pdf",width=18,height=12)
+  ggsave(paste(num,"_f&r_overtime.pdf",sep=""),width=18,height=12)
   
   #### Compare with and without fitness and resistance levels. 
   ### Range of omega
@@ -490,7 +490,7 @@ plot_diff_acd_output <- function(acqdistn,plots,num) {
   p<-p + scale_linetype_discrete("With\ndiversity",breaks=c(0,1),labels=c("None","With diversity")) + theme(legend.position="none")
   p
   setwd(plots)
-  ggsave("Withoutdiversity.pdf",width=12,height=7)
+  ggsave(paste(num,"_Withoutdiversity.pdf",sep=""),width=12,height=7)
   
   p<-ggplot(allmn,aes(x=time,y=value,colour=variable,linetype=factor(with)))+geom_line(size=2) + 
     scale_x_continuous("Time steps",lim=c(0,endp*dt))
@@ -500,12 +500,12 @@ plot_diff_acd_output <- function(acqdistn,plots,num) {
   p<-p + scale_linetype_discrete("With\ndiversity",breaks=c(0,1),labels=c("None","With diversity")) 
   p
   setwd(plots)
-  ggsave("WithnWithoutdiversity.pdf",width=12,height=7)
+  ggsave(paste(num,"_WithnWithoutdiversity.pdf",sep=""),width=12,height=7)
   p + theme(legend.position="none")
-  ggsave("WithnWithoutdiversity_nolegend.pdf",width=12,height=7)
+  ggsave(paste(num,"_WithnWithoutdiversity_nolegend.pdf",sep=""),width=12,height=7)
   
   p + scale_y_continuous("Percentage of population",lim=c(0,10)) 
-  ggsave("WithnWithoutdiversity_zoom.pdf",width=12,height=7)
+  ggsave(paste(num,"_WithnWithoutdiversity_zoom.pdf",sep=""),width=12,height=7)
   
   ## Plot like in Gulberg
   pp2n<-pp2[7501:15000,]
@@ -523,9 +523,9 @@ plot_diff_acd_output <- function(acqdistn,plots,num) {
   g<-ggplot(drrm2n, aes(x=adj.time, y= value,colour=factor(variable))) + geom_point(aes(shape = factor(variable)),size=5)+ theme(legend.position="top")
   g<-g+ scale_x_continuous("Generations") + scale_y_continuous("Proportion") + scale_colour_discrete("")+ scale_shape_discrete("")
   setwd(plots)
-  ggsave("Gulberg5d.pdf",width=16,height=8)
+  ggsave(paste(num,"_Gulberg5d.pdf",sep=""),width=16,height=8)
   
-  
+}
   
   ######**********************************************************************************  *******#####
   ## Plot all output for different acqdistns
