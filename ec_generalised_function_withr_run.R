@@ -76,26 +76,26 @@ setwd(plots)
 sub<-c(1/dt,100,250,500,750,1000,1500,2000,2500,seq(3000,4001,500))*dt
 w<-which(mm20[,"t"] %in% sub)
 # plots
-p1<-ggplot(mm20[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle("w = 0.2")
+p1<-ggplot(mm20[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", omega1,sep=""))
 p1<-p1 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide = FALSE)
 p1<-p1 + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 p1<-p1 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
 p1
-ggsave("Array_w=20_06.pdf")
-p9<-ggplot(mm10[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle("w = 0.1")
+ggsave(paste("Array_w=",omega1,"_06.pdf",sep=""))
+p9<-ggplot(mm10[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", omega2,sep=""))
 p9<-p9 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide = FALSE)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
 p9<-p9 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
 p9
-ggsave("Array_w=10_06.pdf")
-p4<-ggplot(mm05[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle("w = 0.05")
+ggsave(paste("Array_w=",omega2,"_06.pdf",sep=""))
+p4<-ggplot(mm05[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", omega3,sep=""))
 p4<-p4 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide=FALSE)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
 p4<-p4 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
 p4
-ggsave("Array_w=05_06.pdf")
+ggsave(paste("Array_w=",omega3,"_06.pdf",sep=""))
 
 setwd(plots)
 pdf("Array_w_all.pdf",width=12,height=8)
-multiplot(p1,p4,cols=2)
+multiplot(p1,p9,cols=2)
 dev.off()
 
 
