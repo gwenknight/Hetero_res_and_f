@@ -25,8 +25,7 @@ ec_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist){
   # MIN MIC = 0.1
   vs_mic <- seq(0.1,32,length.out = m) 
   # Vector of resistance levels
-  vs_rel <- pmax((vs_mic - trate),0)/vs_mic # constant ### SHOULD SUM TO 1? 
-  vs_rel <- vs_rel / sum(vs_rel)
+  vs_rel <- pmax((vs_mic - trate),0)/vs_mic # constant 
   
   #print(c("baseline","vs_rel",vs_rel,"vf",vf))
   
@@ -117,10 +116,10 @@ ec_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,kk){
   # Parameters assigned by length of vary so for baseline just eps = 0
   vary_n = c("omega") # NB only ks important (kr not used). This is proportion of cases treated successfully if susceptible, mean resistance multiplies this
   if(length(vary)>0){for(i in 1:length(vary)){assign(vary_n[i],vary[i])}}
-  print(c("ks,omega",ks, omega))
+
   N<-sum(iniv)
   # Correct for timestep
-  mu<-mu*dt;omega<-omega*dt;beta<-beta*dt;eps<-eps*dt
+  mu<-mu*dt;beta<-beta*dt;eps<-eps*dt
   
   #*** Build and intialise population
   U<-matrix(0,1,endp); S<-matrix(0,1,endp); R<-matrix(0,1,endp);
@@ -139,24 +138,28 @@ ec_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,kk){
   
   #*** Initial foi
   lambdasv<-matrix(0,1,endp);lambdarv<-matrix(0,1,endp);
-  lambdasv[1] = beta * S[1]/N;   lambdarv[1] = sum(colSums(acqdistn*seq(1/nfit,1,1/nfit))) * beta * R[1]/N # function outputs just meanfit when all popns 0
+  lambdasv[1] = max(0,(1-omega)/1) * beta * S[1]/N;   
+  vs_mic1 <- seq(0.1,32,length.out = mres); vs_rel1 <- pmax((vs_mic1 - omega),0)/vs_mic1 # constant 
+  lambdarv[1] = sum(colSums(acqdistn)*seq(1/nfit,1,1/nfit)) * sum(rowSums(acqdistn)*vs_rel1) * beta * R[1]/N # function outputs just meanfit when all popns 0
   meanf<-c(0,0);
   
   #*** Initial susceptibility 
   krv = matrix(0,1,endp);
   krv[1] = 0 * (ks) # (ks) is the success of the antibiotic for wholly susceptible. If all totally susceptible this is the same. 
   
+  print(c("mu",mu,"beta",beta,"eps",eps,"kk",kk,"omega",omega))
+  
   #*** Main model dynamics
   for(i in 1:endp){
     lambdas=lambdasv[i];lambdar=lambdarv[i]; kr = krv[i]
     #print(c("ks,kr",ks,kr,X$meanfit,lambdas))
     # Dynamics
-    U[i+1] =  U[i] + mu*(S[i]+R[i]) - (lambdas+lambdar)*(U[i]/(U[i] + kk)) 
+    U[i+1] =  U[i] + mu*(S[i]+R[i]) - (lambdas+lambdar)*(U[i]/(U[i] + kk))
     S[i+1] =  S[i] + lambdas*(U[i]/(U[i] + kk)) - mu*S[i] - eps * S[i]
     R[i+1] =  R[i] + lambdar*(U[i]/(U[i] + kk)) - mu*R[i] + eps * S[i] 
     
     # Mean fitness update and foi
-    X<-ec_meanfit_varsr(M,S[i]*eps,lambdar*U[i]/(U[i] + kk),omega,R[i]*(1 - mu),nfit,mres,acqdist)
+    X<-ec_meanfit_varsr(M,S[i]*eps,lambdar*(U[i]/(U[i] + kk)),omega,R[i]*(1 - mu),nfit,mres,acqdist)
 
     # MIC Susceptible = 1
     lambdasv[i+1] = max(0,(1-omega)/1) * beta * S[i+1] / N; 

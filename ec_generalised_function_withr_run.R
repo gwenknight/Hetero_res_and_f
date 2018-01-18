@@ -20,8 +20,8 @@ source("ec_generalised_function_withr.R")
 
 ##*** Setting up
 # Number of discrete fitness levels? Resistance levels?
-nfit = 5; 
-mres = 5;
+nfit = 25; 
+mres = 25;
 # Array of distribution of fitness and resistance c[resistance, fitness]
 M0 <- array(0,c(mres,nfit,10))
 
@@ -42,16 +42,26 @@ p
 setwd(plots)
 ggsave("acqdistn_06.pdf",width=14,height=10)
 
+## Try another
+aa <- matrix(0,25,25)
+aa[1:5,21:25] <- acqdistn
+acqdistn <- aa
+nfit = 25; 
+mres = 25;
+# Array of distribution of fitness and resistance c[resistance, fitness]
+M0 <- array(0,c(mres,nfit,10))
+
 
 # Initial conditions
 iniv<-c(98,1,1)
+#iniv<-c(60,39,1)
 
 #############********************************************** LOAD UP TO HERE ********************************************** 
 dt=0.1
 tsteps<-500*(1/dt)
-omega1 <- 40
-omega2 <- 20
-omega3 <- 5
+omega1 <- 25
+omega2 <- 2
+omega3 <- 0.4
 Sv20<-ec_funcf_mean_varsr(tsteps,home, c(omega1),iniv,M0,acqdistn,dt,500)
 Sv10<-ec_funcf_mean_varsr(tsteps,home, c(omega2),iniv,M0,acqdistn,dt,500)
 Sv05<-ec_funcf_mean_varsr(tsteps,home, c(omega3),iniv,M0,acqdistn,dt,500)
@@ -94,11 +104,53 @@ p4
 ggsave(paste("Array_w=",omega3,"_06.pdf",sep=""))
 
 setwd(plots)
-pdf("Array_w_all.pdf",width=12,height=8)
-multiplot(p1,p9,cols=2)
+pdf("Array_w_all.pdf",width=18,height=8)
+multiplot(p1,p9,p4,cols=3)
 dev.off()
 
+## plot U, S & R over time
+Mu <- as.data.frame(cbind(seq(0, tsteps, 1),matrix(0,tsteps+1,1), Sv05$U, Sv10$U, Sv20$U))
+Ms <- as.data.frame(cbind(seq(0, tsteps, 1),matrix(1,tsteps+1,1), Sv05$S, Sv10$S, Sv20$S))
+Mr <- as.data.frame(cbind(seq(0, tsteps, 1),matrix(2,tsteps+1,1), Sv05$R, Sv10$R, Sv20$R))
+Mmf <- as.data.frame(cbind(seq(0, tsteps, 1),matrix(3,tsteps+1,1), Sv05$meanf[,1], Sv10$meanf[,1], Sv20$meanf[,1]))
+Mmr <- as.data.frame(cbind(seq(0, tsteps, 1),matrix(4,tsteps+1,1), Sv05$meanf[,2], Sv10$meanf[,2], Sv20$meanf[,2]))
+Mhigh <- as.data.frame(cbind(seq(0, tsteps, 1),matrix(5,tsteps+1,1), Sv05$M[5,5,], Sv10$M[5,5,],Sv20$M[5,5,]))
+Musr <- rbind(Mu, Ms, Mr,Mmf,Mmr,Mhigh)
+colnames(Musr) <- c("t", "pop",omega3, omega2, omega1)
+Msrm <- melt(Musr, id.vars = c("t","pop"))
+facet_names <- c(`0` = "U", `1` = "S", `2` = "R", `3` = "mean fit", `4` = "mean res", `5` = "Highest fit/res")
+ggplot(Msrm, aes(x=t, y = value, colour = variable)) + geom_line() + facet_wrap(~pop,labeller = as_labeller(facet_names), scales = "free")
+ggsave("TimeSeries_output_06.pdf")
+# number in highest fitness changes but mean r and f don't? 
 
+
+# plots actual numbers with resistance
+for(i in 1:length(w)){mm20[w[i],"zR"] <- Sv20$R[(1/dt)*mm20[w[i],"t"]]*mm20[w[i],"z"]}
+for(i in 1:length(w)){mm10[w[i],"zR"] <- Sv10$R[(1/dt)*mm10[w[i],"t"]]*mm10[w[i],"z"]}
+for(i in 1:length(w)){mm05[w[i],"zR"] <- Sv05$R[(1/dt)*mm05[w[i],"t"]]*mm05[w[i],"z"]}
+
+p1<-ggplot(mm20[w,],aes(x,y,fill=zR))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", omega1,sep=""))
+p1<-p1 + scale_fill_gradient("Proportion", limits=c(0,100),low="white", high="red",guide = FALSE)
+p1<-p1 + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+p1<-p1 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
+p1
+ggsave(paste("Array_w=",omega1,"_zR_06.pdf",sep=""))
+p9<-ggplot(mm10[w,],aes(x,y,fill=zR))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", omega2,sep=""))
+p9<-p9 + scale_fill_gradient("Proportion", limits=c(0,100),low="white", high="red",guide = FALSE)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
+p9<-p9 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
+p9
+ggsave(paste("Array_w=",omega2,"_zR_06.pdf",sep=""))
+p4<-ggplot(mm05[w,],aes(x,y,fill=zR))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", omega3,sep=""))
+p4<-p4 + scale_fill_gradient("Proportion", limits=c(0,100),low="white", high="red",guide=FALSE)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
+p4<-p4 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
+p4
+ggsave(paste("Array_w=",omega3,"_zR_06.pdf",sep=""))
+
+setwd(plots)
+pdf("Array_w_all_zR.pdf",width=18,height=8)
+multiplot(p4,p9,p1,cols=3)
+dev.off()
+# shows that not all potential 100 units are R
 
 
 
@@ -108,7 +160,7 @@ dev.off()
 mm20$omega = omega1; mm10$omega = omega2; mm05$omega = omega3
 mega<-as.data.frame(rbind(mm20,mm10,mm05)); colnames(mega)<-c("x","y","z","time","omega")
 mega$level = c(seq(21,25,1),seq(16,20,1),seq(11,15,1),seq(6,10,1),seq(1,5,1))
-g<-ggplot(mega,aes(x=time,y=z,colour=factor(omega))) + geom_line(size=2) + facet_wrap( ~ level, ncol=5) +  scale_colour_manual(values=cbPalette,"Abx\nLevel",breaks=c(omega1,omega2, omega3),labels=c("0.2","0.1","0.05"))
+g<-ggplot(mega,aes(x=time,y=z,colour=factor(omega))) + geom_line(size=2) + facet_wrap( ~ level, ncol=5) +  scale_colour_manual(values=cbPalette,"Abx\nLevel",breaks=c(omega1,omega2, omega3))
 g<-g + scale_x_continuous("Generations",breaks=c(0,200,400)) + scale_y_continuous("Proportion at this level",breaks=c(0.25,0.75))+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
 g
 setwd(plots)
@@ -192,15 +244,12 @@ ggsave("f&r_overtime.pdf",width=18,height=12)
 #### Compare with and without fitness and resistance levels. 
 ### Range of omega
 setwd(home)
-omegav<-c(0.2,0.1,0.05) * dt
-#omegav<-c(0.3,0.4,0.2) * dt
-para<-read.csv("para_ecoli.csv",header=TRUE,check.names=F,stringsAsFactors = FALSE)[,1:2]
+omegav <- c(omega1,omega2,omega3)
+para<-read.csv("data/para_ecoli.csv",header=TRUE,check.names=F,stringsAsFactors = FALSE)[,1:2]
 for(i in 1:length(para[,1])){assign(para[i,1],para[i,2])}
 # Correct for timestep
 mu<-mu*dt;beta<-beta*dt;eps<-eps*dt
-assign("ks",1) # Prescribe effect treatment success levels
-m<-dim(acqdistn)[1]; vs<-seq(1/m,1,1/m); vf=vs
-assign("kr",1-sum(colSums(acqdistn)*vs)) # Set the levels to be those of the acqdistn
+m<-dim(acqdistn)[1]; vs<-seq(1/m,1,1/m); 
 assign("f",sum(colSums(acqdistn)*vf))
 ## SAME as writeup_ecoli
 #kr = 0.4; f = 0.6 ## 40% cost to both
@@ -215,14 +264,15 @@ for(j in 1:length(omegav)){
   assign("omega",omegav[j])
   for(i in 1:endp){
     lambdas=lambdasv[i];lambdar=lambdarv[i];
-    # Dynamics
-    U[i+1] =  U[i] + mu*(S[i]+R[i]) - (lambdas+lambdar)*U[i] + omega*ks*S[i] + omega*kr*R[i]
-    S[i+1] =  S[i] + lambdas*U[i] - (mu + omega*ks)*S[i] - eps * S[i]
-    R[i+1] =  R[i] + lambdar*U[i] - (mu + omega*kr)*R[i] + eps * S[i] 
-    lambdasv[i+1] = beta * S[i+1] / 100; 
-    lambdarv[i+1] = f * beta * R[i+1] / 100;   #X$meanfit * beta * R[i+1]/N; 
+    # NEW Dynamics
+    U[i+1] =  U[i] + mu*(S[i]+R[i]) - (lambdas+lambdar)*(U[i]/(U[i] + kk)) 
+    S[i+1] =  S[i] + lambdas*(U[i]/(U[i] + kk)) - mu*S[i] - eps * S[i]
+    R[i+1] =  R[i] + lambdar*(U[i]/(U[i] + kk)) - mu*R[i] + eps * S[i] 
+    
+    lambdasv[i+1] =     max(0,(1-omega)/1) * beta * S[i+1] / ( S[i+1] + R[i+1] );
+    lambdarv[i+1] = f * max(0,(20-omega)/20) * beta * R[i+1] / ( S[i+1] + R[i+1] );   # resistant strain has an MIC of 6  
   } 
-  all<-as.data.frame(cbind(seq(0,endp,1)*dt,U,S,R,omega/dt)); colnames(all)<-c("time","U","Susceptible","Resistant","w")
+  all<-as.data.frame(cbind(seq(0,endp,1)*dt,U,S,R,omega)); colnames(all)<-c("time","U","Susceptible","Resistant","w")
   bigall<-rbind(bigall,all)
 }
 allm<-melt(bigall[,c("time","Susceptible","Resistant","w")], id.vars=c("w","time"))
@@ -237,15 +287,31 @@ rrm2n[which(rrm2n$w=="20"),"nw"]<-allm[1,"nw"]
 allm$with<-0; allm$nw<-allm$w; 
 allmn<-rbind(allm,rrm2n)
 
-p<-ggplot(allmn,aes(x=time,y=value,colour=variable,linetype=factor(with)))+geom_line(size=2) + scale_x_continuous("Generations",lim=c(0,endp*dt))
-p<-p+scale_colour_discrete("Sub-\npopulation",breaks=c("Susceptible","Resistant")) + scale_y_continuous("Percentage of population") + facet_wrap( ~ nw)  + theme(axis.text.x = element_text(angle = 90, hjust = 1))
-p<-p+ scale_linetype_discrete("With\ndiversity",breaks=c(0,1),labels=c("None","With diversity")) 
+w<-which(allmn$with == 0)
+p<-ggplot(allmn[w,],aes(x=time,y=value,colour=variable,linetype=factor(with)))+geom_line(size=2) + 
+  scale_x_continuous("Time steps",lim=c(0,endp*dt))
+p<-p+scale_colour_manual("Sub-\npopulation",breaks=c("Susceptible","Resistant"), values = c("blue","red")) + 
+  scale_y_continuous("Percentage of population", limits = c(0,100)) + facet_wrap( ~ nw)  + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+p<-p + scale_linetype_discrete("With\ndiversity",breaks=c(0,1),labels=c("None","With diversity")) + theme(legend.position="none")
 p
 setwd(plots)
-ggsave("WithnWithoutdiversity.pdf",width=16,height=8)
+ggsave("Withoutdiversity.pdf",width=12,height=7)
+
+p<-ggplot(allmn,aes(x=time,y=value,colour=variable,linetype=factor(with)))+geom_line(size=2) + 
+  scale_x_continuous("Time steps",lim=c(0,endp*dt))
+p<-p+scale_colour_manual("Sub-\npopulation",breaks=c("Susceptible","Resistant"), values = c("blue","red")) + 
+  scale_y_continuous("Percentage of population", limits = c(0,100)) + facet_wrap( ~ nw)  + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+p<-p + scale_linetype_discrete("With\ndiversity",breaks=c(0,1),labels=c("None","With diversity")) 
+p
+setwd(plots)
+ggsave("WithnWithoutdiversity.pdf",width=12,height=7)
+p + theme(legend.position="none")
+ggsave("WithnWithoutdiversity_nolegend.pdf",width=12,height=7)
 
 p + scale_y_continuous("Percentage of population",lim=c(0,10)) 
-ggsave("WithnWithoutdiversity_zoom.pdf",width=16,height=8)
+ggsave("WithnWithoutdiversity_zoom.pdf",width=12,height=7)
 
 ## Plot like in Gulberg
 pp2n<-pp2[7501:15000,]
