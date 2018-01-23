@@ -20,8 +20,8 @@ source("ec_generalised_function_withr.R")
 
 ##*** Setting up
 # Number of discrete fitness levels? Resistance levels?
-nfit = 25; 
-mres = 25;
+nfit = 5; 
+mres = 5;
 # Array of distribution of fitness and resistance c[resistance, fitness]
 M0 <- array(0,c(mres,nfit,10))
 
@@ -59,26 +59,29 @@ iniv<-c(98,1,1)
 #############********************************************** LOAD UP TO HERE *********************************************########
 dt=0.1
 tsteps<-500*(1/dt)
-omega1 <- 25
-omega2 <- 2
-omega3 <- 0.4
+omega1 <- 24
+omega2 <- 16
+omega3 <- 2
+omega4 <- 0.4
 Sv20<-ec_funcf_mean_varsr(tsteps,home, c(omega1),iniv,M0,acqdistn,dt,500)
-Sv10<-ec_funcf_mean_varsr(tsteps,home, c(omega2),iniv,M0,acqdistn,dt,500)
-Sv05<-ec_funcf_mean_varsr(tsteps,home, c(omega3),iniv,M0,acqdistn,dt,500)
+Sv15<-ec_funcf_mean_varsr(tsteps,home, c(omega2),iniv,M0,acqdistn,dt,500)
+Sv10<-ec_funcf_mean_varsr(tsteps,home, c(omega3),iniv,M0,acqdistn,dt,500)
+Sv05<-ec_funcf_mean_varsr(tsteps,home, c(omega4),iniv,M0,acqdistn,dt,500)
 ## NEED TO SPEED IT UP?? Fast for 5 x 5... ~6 sec on laptop 
 
 # What happens? 
-mm20<-c() ; mm10<-c() ; mm05<-c() 
+mm20<-c() ; mm10<-c() ; mm05<-c() ; mm15<-c() 
 ll<-dim(Sv20$M)[3];
 ss<-seq(0,ll,1/dt) # Don't want to grab all 
 for(i in 2:length(ss)){
   mm220<-as.data.frame(melt(Sv20$M[,,ss[i]])); 
+  mm215<-as.data.frame(melt(Sv15$M[,,ss[i]])); 
   mm210<-as.data.frame(melt(Sv10$M[,,ss[i]])); 
   mm205<-as.data.frame(melt(Sv05$M[,,ss[i]])); 
-  mm220$tstep=ss[i]*dt; mm210$tstep=ss[i]*dt; mm205$tstep=ss[i]*dt # To go to generations
-  mm20<-rbind(mm20,mm220); mm10<-rbind(mm10,mm210) ; mm05<-rbind(mm05,mm205) 
+  mm220$tstep=ss[i]*dt; mm215$tstep=ss[i]*dt; mm210$tstep=ss[i]*dt; mm205$tstep=ss[i]*dt # To go to generations
+  mm20<-rbind(mm20,mm220);mm15<-rbind(mm15,mm215); mm10<-rbind(mm10,mm210) ; mm05<-rbind(mm05,mm205) 
 } 
-colnames(mm20)<-c("x","y","z","t"); colnames(mm10)<-c("x","y","z","t") ;colnames(mm05)<-c("x","y","z","t")
+colnames(mm20)<-c("x","y","z","t"); colnames(mm15)<-c("x","y","z","t"); colnames(mm10)<-c("x","y","z","t") ;colnames(mm05)<-c("x","y","z","t")
 #mm20$x<-seq(mres,1,-1); mm10$x<-seq(mres,1,-1); mm05$x<-seq(mres,1,-1)
 setwd(plots)
 # Grab a subset
@@ -92,20 +95,26 @@ p1<-p1 + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 p1<-p1 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
 p1
 ggsave(paste("Array_w=",omega1,"_06.pdf",sep=""))
-p9<-ggplot(mm10[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", omega2,sep=""))
-p9<-p9 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide = FALSE)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
-p9<-p9 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
-p9
+p2<-ggplot(mm15[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", omega2,sep=""))
+p2<-p2 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide=FALSE)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
+p2<-p2 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
+p2
 ggsave(paste("Array_w=",omega2,"_06.pdf",sep=""))
-p4<-ggplot(mm05[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", omega3,sep=""))
+p3<-ggplot(mm10[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", omega3,sep=""))
+p3<-p3 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide = FALSE)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
+p3<-p3 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
+p3
+ggsave(paste("Array_w=",omega3,"_06.pdf",sep=""))
+p4<-ggplot(mm05[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", omega4,sep=""))
 p4<-p4 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide=FALSE)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
 p4<-p4 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
 p4
-ggsave(paste("Array_w=",omega3,"_06.pdf",sep=""))
+ggsave(paste("Array_w=",omega4,"_06.pdf",sep=""))
+
 
 setwd(plots)
-pdf("Array_w_all.pdf",width=18,height=8)
-multiplot(p1,p9,p4,cols=3)
+pdf("Array_w_all.pdf",width=18,height=18)
+multiplot(p1,p2,p4,p3,cols=2)
 dev.off()
 
 ## plot U, S & R over time

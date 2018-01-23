@@ -143,15 +143,11 @@ ec_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,kk){
   lambdarv[1] = sum(colSums(acqdistn)*seq(1/nfit,1,1/nfit)) * sum(rowSums(acqdistn)*vs_rel1) * beta * R[1]/N # function outputs just meanfit when all popns 0
   meanf<-c(0,0);
   
-  #*** Initial susceptibility 
-  krv = matrix(0,1,endp);
-  krv[1] = 0 * (ks) # (ks) is the success of the antibiotic for wholly susceptible. If all totally susceptible this is the same. 
-  
   print(c("mu",mu,"beta",beta,"eps",eps,"kk",kk,"omega",omega))
   
   #*** Main model dynamics
   for(i in 1:endp){
-    lambdas=lambdasv[i];lambdar=lambdarv[i]; kr = krv[i]
+    lambdas=lambdasv[i];lambdar=lambdarv[i];
     #print(c("ks,kr",ks,kr,X$meanfit,lambdas))
     # Dynamics
     U[i+1] =  U[i] + mu*(S[i]+R[i]) - (lambdas+lambdar)*(U[i]/(U[i] + kk))
@@ -168,18 +164,17 @@ ec_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,kk){
     N = S[i+1] + R[i+1]
     
     M<-X$bigM
-    L<-X$bigL
     meanf<-rbind(meanf,c(X$meanfit,X$meanres))
   }
   
   #*** Storing and output
   All<-c();D<-c()
   All<-as.data.frame(cbind(seq(1,endp+1,1),U,S,R,meanf))
-  colnames(All)<-c("time","U","S","R","mf")
+  colnames(All)<-c("time","U","S","R","mf","mr")
   # In form for plotting
   D1<-melt(All,id.vars="time")
   # What to output (storage of all vector, plus individual levels, at 5 and 50, foi s, foi r, fitness distributions and mean relative fitness over time)
-  return(list(D=D,U=U,S=S,R=R,lambdasv=lambdasv,lambdarv=lambdarv,M=M,L=L,meanf=meanf,krv=krv))
+  return(list(D1=D1,U=U,S=S,R=R,lambdasv=lambdasv,lambdarv=lambdarv,M=M,meanf=meanf))
 }
 
 
@@ -527,9 +522,10 @@ plot_diff_acd_output <- function(acqdistn,plots,num) {
   
 }
   
-  ######**********************************************************************************  *******#####
-  ## Plot all output for different acqdistns
-  # old
+
+######**********************************************************************************  *******#####
+## Plot all output for different acqdistns
+# old
   
   plot_diff_acd_output <- function(acqdistn,plots,num) {
     # acqdistn = matrix of acqdistn

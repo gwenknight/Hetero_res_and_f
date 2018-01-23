@@ -74,3 +74,14 @@ plot(seq(1,mtstep,1),R, type = "l")
 # lines(seq(1,length(n[1,]),1),n[3,],col='green')
 # lines(seq(1,length(n[1,]),1),n[4,],col='pink')
 # lines(seq(1,length(n[1,]),1),n[5,],col='red')
+
+####*** DATA **###
+# Can parameterise acquisition distributino with supplementary data? 
+# how were they generated = what is the relative appearance rate? 
+huseby <- read.csv("~/Documents/Hetero_res_and_f/data/huseby_supp_data.csv")
+huseby$MIC<-as.numeric(huseby$MIC)
+huseby$Fitness<-as.numeric(huseby$Fitness)
+plot(huseby$MIC, huseby$Fitness)
+h<-hist(huseby$MIC,breaks=seq(0,32,0.5))
+h<-hist(huseby$Fitness,breaks=seq(0,32,0.5))
+for(i in 1:)
