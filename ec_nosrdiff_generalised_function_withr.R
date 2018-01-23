@@ -6,8 +6,8 @@
 ## Function to update the mean fitness & MEAN SUSCEPTIBILITY at each timestep
 ec_srs_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist){
   # Needs bigM: Array of distribution  [susceptible rows, fitness columns, time]
-  #       acq: number of acquisitions of resistant strains
-  #       trans: number of transmissions of resistant strains
+  #       acq: number of acquisitions of new strains
+  #       trans: number of new bacterial strains
   #       trate: antibiotic exposure level
   #       nA: number with bacteria
   #       n: number of fitness levels
@@ -17,17 +17,13 @@ ec_srs_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist){
   # Vector of fitness values
   vf<-seq(1/n,1,1/n)
   
-  # VECTOR of MIC LEVELs => Susceptible has MIC of 1.  
-  # ?? 0.1 => 10% resistant, 0.9 = 90% resistant.
-  # vs<-seq(1/m,1,1/m)
+  # VECTOR of MIC LEVELs => ?Susceptible has MIC of 1.  
   # vector of MIC values
   # MAX MIC = 32
   # MIN MIC = 0.1
   vs_mic <- seq(0.1,32,length.out = m) 
-  # Vector of resistance levels
+  # Vector of resistance levels in face of antibiotic treatment trate
   vs_rel <- pmax((vs_mic - trate),0)/vs_mic # constant 
-  
-  #print(c("baseline","vs_rel",vs_rel,"vf",vf))
   
   # Which column of M? last that is non-zero plus one for this timestep
   sumM<-colSums(colSums(bigM,dims=1)) # Gives a vector of the sums over the array for each timestep
@@ -37,104 +33,92 @@ ec_srs_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist){
   if(acq==0 && trans==0){meanfit = 0; return(meanfit); meanres = 0; return(meanres);
   #************************************************ Otherwise look at distribution  
   }else{
-    M <- bigM[,,tt-1] # Grab the appropriate matrix for this timestep
-    M_new <- M;  # New matrices to update as go through
+    #  M <- bigM[,,tt-1] # Grab the appropriate matrix for this timestep
+    #  M_new <- M;  # New matrices to update as go through
     
-    #**** Update M
+    M_new <- bigM[,,tt-1] # Grab the appropriate matrix for this timestep, use as ew matrix to update as go through
+    
+    #**** Update 
     ##### 1) New cases - how distribute acquisitions across fitness and resistance? 
     
     #*** How are the acquisitions distributed? Input
     new_a <- acqdist
-    
+
     #*** How are the new growth bugs distributed?
     M_temp<-M_new
     # if none resistant then none grow... 
-    Mr<-rowSums(M_temp) # = rowSums(M_new) same # Proportions at each RESISTANCE level
-    if(trans>0){ pastmean=sum( Mr*vs_rel ) }else{ pastmean = 0; }
-    if(pastmean > 0){ # if resistant then do the following... otherwise no new bugs
-      
-      # now growth rate dependent on fitness and resistance 
-      # FITNESS
-      Mf<-colSums(M_new) # Proportions at each FITNESS level
-      if(trans>0){ pastmean=sum( Mf*vf ) }else{ pastmean = 1 }
-      M_temp<-M_new
-      #for(i in 1:length(Mf)){M_temp[,i] = M_temp[,i] * vf[i] / pastmean } # Updated matrix: colSums(M_new) = Mf_new
-      M_temp <- t(t(M_temp) * vf / pastmean)
-      
-      # RESISTANCE
-      Mr<-rowSums(M_temp) # = rowSums(M_new) same # Proportions at each RESISTANCE level
-      if(trans>0){ pastmean=sum( Mr*vs_rel ) }else{ pastmean = 1 }
-      # update M_temp with fitness then resistance
-      #for(i in 1:length(Mf)){M_temp[i,] = M_temp[i,] * vs_rel[i] / pastmean } # Updated matrix: colSums(M_new) = Mf_new
-      if(pastmean > 0){M_temp <- vs_rel*M_temp/pastmean} 
-      # if some of the 
-      # As some may be zero (if antibiotic use too high - remember this is new growth)
-      # M_temp <- M_temp/sum(M_temp) ## don't need as sum(vs_rel) now = 1.
-      #?? does it matter to do fitness then resistance? don't think it makes a difference. 
-      
-      # if no new transmission then 
-      new_b = M_temp 
-    }else{new_b = 0; trans = 0} # if all resistant then no growth
-    
+    res_levels = sum( vs_rel )
+    if(trans > 0){ # if no growth then no need to do
+      if(res_levels > 0){ # if resistant then do the following... otherwise no new bugs
+        
+        # now growth rate dependent on fitness and resistance 
+        # update M_temp with fitness then resistance
+        
+        # FITNESS
+        Mf<-colSums(M_temp) # Proportions at each FITNESS level
+        pastmean=sum( Mf*vf )
+        M_temp <- t(t(M_temp) * vf / pastmean)
+        print(sum(M_temp))
+        # RESISTANCE
+        Mr<-rowSums(M_temp) # = rowSums(M_new) same # Proportions at each RESISTANCE level
+        pastmean=sum( Mr*vs_rel )
+        if(pastmean > 0){ M_temp <- vs_rel*M_temp/pastmean } # Otherwise leave M_temp as is. 
+        print(c("2",sum(M_temp)))
+        # new transmission are then distributed
+        new_b = M_temp 
+        
+      }else{new_b = 0; trans = 0} # if all resistant then no growth
+    }else{new_b = 0} # no distribution of new cases
     
     #*** Assign and update M
     # nA = number of actives left after treatment removed (affects distribution) and death (doesn't affect)
-    #if(nA>0){M[,tt] = M[,tt-1]*( nA/(nA+acq+trans+react) ) + new * (acq+trans+react)/(nA+acq+trans+react)  ## PREVIOUS WITHOUT SUS
-    # if(nA>0){M_new = M_new * nA / (nA+acq+trans) + new * (acq+trans)/(nA+acq+trans)  ### previous with S&R
-    if(nA>0){M_new = M_new * nA / (nA+acq+trans) + 
-      new_a * acq/(nA+acq+trans) + new_b * trans/(nA+acq+trans) 
-    }else{M_new =  new_a * acq/(nA+acq+trans) + new_b * trans/(nA+acq+trans)  }
+    M_new = M_new * nA / (nA+acq+trans) + new_a * acq / (nA+acq+trans) + new_b * trans / (nA+acq+trans) 
     
     #*** New matrix
     bigM[,,tt] <- M_new # Grab the appropriate matrix for this timestep
-    
-    
+
     #*** Checks
-    if(any(colSums(M_new)>1.001)){print(c(sum(M[,which(colSums(M_new>1))]),"colsums",colSums(M_new,"ERROR in colsums of M")));break}
-    if(any(rowSums(M_new)>1.001)){print(c(sum(M[,which(rowSums(M_new>1))]),"rowsums",rowSums(M_new,"ERROR in rowsums of M")));break}
+    #print(c(rowSums(M_new), "total",sum(M_new)))
+    if(any(colSums(M_new)>1.001)){print(c(sum(M_new[,which(colSums(M_new>1.001))]),"colsums",colSums(M_new,"ERROR in colsums of M")));break}
+    if(any(rowSums(M_new)>1.001)){print(c(sum(M_new[,which(rowSums(M_new>1.001))]),"rowsums",rowSums(M_new,"ERROR in rowsums of M")));break}
     
     #*** Calculate mean fitness
     meanfit = sum(colSums(bigM[,,tt])*vf)
     
     #*** Calculate mean susceptibility
-    # This is the percentage of those at each fitness level that die * 
-    #? To match previous work this should be 0.6/0.95 to convert (1-ks) [0.95] to (1-kr) [0.6]
-    # 0.1 is 10% resistant: gives a number, (1- this number) is the amount of treatment success
     meanres = sum(rowSums(bigM[,,tt])*vs_rel)
   }
   
-  #print(c("meanfit",meanfit))
   #*** Output mean fitness, new distributions of active and latent 
-  return(list(meanfit=meanfit,vs_rel=vs_rel,bigM=bigM,meanres = meanres, vf=vf))
+  return(list(meanfit=meanfit, vs_rel=vs_rel, bigM=bigM, meanres = meanres, vf=vf))
 }
 
 
 ######***************************************************************************** Difference equation set up taking in above *******#####
 ## Function which calculates population dynamics over time
-ec_srs_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,kk){
+ec_srs_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt){
   # Needs endp: length of simulation
   #       home: location
-  #       vary: key parameters can change (epsilon, f and treatment differential (krdiff))
-  #       initial: initial population (150/100K incidence etc) 
-  #       M0,L0: initial distribution arrays, gives information on number of fitness levels 
-  #       type: type for acquisition distribution (options: "orig" "normal")
+  #       vary: key parameters can change (OMEGA [abx], kk)
+  #       initial: initial population
+  #       M0: initial distribution arrays, gives information on number of fitness levels 
+  #       acqdist: incoming distribution of new mutations
+  #       dt = timestep
   
   #*** Parameter assignment
   # Might not need if globally assigned
   setwd(home) # might have para in different place for different models 
   para<-read.csv("data/para_ecoli.csv",header=TRUE,check.names=F,stringsAsFactors = FALSE)[,1:2]
   for(i in 1:length(para[,1])){assign(para[i,1],para[i,2])}
-  # Assign vary after to overwrite (? not checked overruled global assignment for meanfit function)
-  # Parameters assigned by length of vary so for baseline just eps = 0
-  vary_n = c("omega") # NB only ks important (kr not used). This is proportion of cases treated successfully if susceptible, mean resistance multiplies this
+  vary_n = c("omega","kk") 
   if(length(vary)>0){for(i in 1:length(vary)){assign(vary_n[i],vary[i])}}
   
   # Correct for timestep
-  mu<-mu*dt;beta<-beta*dt;eps<-eps*dt
+  mu<-mu*dt;  beta<-beta*dt;    eps<-eps*dt 
   
   #*** Build and intialise population
-  U<-matrix(0,1,endp); B<-matrix(0,1,endp);
-  U[1]<-initial[1]; B[1]<-initial[2]
+  U<-matrix(0,1,endp);      B<-matrix(0,1,endp);
+  U[1]<-initial[1];         B[1]<-initial[2]
   
   #*** Fitness levels: Add columns to M and L if not enough time steps
   if(dim(M0)[3]<endp){M<-array(0,c(dim(M0)[1],dim(M0)[2],endp+1)); M[,,1]<-M0[,,1]; rownames(M)<-rownames(M0);}else{M<-M0}
@@ -153,8 +137,9 @@ ec_srs_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,kk){
   vs_mic1 <- seq(0.1,32,length.out = mres); 
   vs_rel1 <- pmax((vs_mic1 - omega),0)/vs_mic1 # constant 
   lambda[1] = sum(colSums(acqdistn)*seq(1/nfit,1,1/nfit)) * sum(rowSums(acqdistn)*vs_rel1) * beta * B[1] # function outputs just meanfit when all popns 0
-  meanf<-c(0,0);
   
+  # Store place
+  meanf<-c(0,0);
   print(c("mu",mu,"beta",beta,"eps",eps,"kk",kk,"omega",omega))
   
   #*** Main model dynamics
@@ -167,16 +152,14 @@ ec_srs_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,kk){
     B[i+1] =  B[i] + lambda*(U[i]/(U[i] + kk)) - mu*B[i] 
     
     # Mean fitness update and foi
-    X<-ec_srs_meanfit_varsr(M,eps*lambda*(U[i]/(U[i] + kk)),
-                            (1-eps)*lambda*(U[i]/(U[i] + kk)),omega,B[i]*(1 - mu),
-                            nfit,mres,acqdist)
-   # print(c(i,"X",X))
-    # MIC Susceptible = 1
+    X<-ec_srs_meanfit_varsr(M,eps*lambda*(U[i]/(U[i] + kk)),(1-eps)*lambda*(U[i]/(U[i] + kk)),
+                            omega,B[i]*(1 - mu),nfit,mres,acqdist)
+    # Update fitness
     lambda[i+1] = X$meanfit * X$meanres * beta * B[i+1]   
     
+    # Store
     M<-X$bigM
     meanf<-rbind(meanf,c(X$meanfit,X$meanres))
-  
   }
   
   #*** Storing and output

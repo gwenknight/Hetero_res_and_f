@@ -67,10 +67,11 @@ omega1 <- 24
 omega2 <- 16
 omega3 <- 2
 omega4 <- 0.4
-Sv20<-ec_srs_funcf_mean_varsr(tsteps,home, c(omega1),iniv,M0,acqdistn,dt,500)
-Sv15<-ec_srs_funcf_mean_varsr(tsteps,home, c(omega2),iniv,M0,acqdistn,dt,500)
-Sv10<-ec_srs_funcf_mean_varsr(tsteps,home, c(omega3),iniv,M0,acqdistn,dt,500)
-Sv05<-ec_srs_funcf_mean_varsr(tsteps,home, c(omega4),iniv,M0,acqdistn,dt,500)
+kk <- 500
+Sv20<-ec_srs_funcf_mean_varsr(tsteps,home, c(omega1,kk),iniv,M0,acqdistn,dt)
+Sv15<-ec_srs_funcf_mean_varsr(tsteps,home, c(omega2,kk),iniv,M0,acqdistn,dt)
+Sv10<-ec_srs_funcf_mean_varsr(tsteps,home, c(omega3,kk),iniv,M0,acqdistn,dt)
+Sv05<-ec_srs_funcf_mean_varsr(tsteps,home, c(omega4,kk),iniv,M0,acqdistn,dt)
 ## NEED TO SPEED IT UP?? Fast for 5 x 5... ~6 sec on laptop 
 
 # What happens? 
