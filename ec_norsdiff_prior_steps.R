@@ -46,7 +46,7 @@ for(i in 1:endp){
   #U[i+1] =  U[i] + mu*(S[i]) - (lambdas)*U[i] + omega*ks*S[i] 
   #S[i+1] =  S[i] + lambdas*U[i] - (mu + omega*ks)*S[i] #- eps * S[i]
   #lambdasv[i+1] = beta * S[i+1] / 100; 
-  lambdav[i+1] = max(0,(1-omega)/1) * beta * B[i+1] 
+  lambdav[i+1] = max(0,(1-omega)/1) * beta * B[i] 
 }  
 
 all<-as.data.frame(cbind(seq(0,200,dt),U,B)); colnames(all)<-c("time","U","B")

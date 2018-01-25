@@ -43,7 +43,7 @@ ec_srs_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist){
     
     #*** How are the acquisitions distributed? Input
     new_a <- acqdist
-
+    
     #*** How are the new growth bugs distributed?
     M_temp<-M_new
     # if none resistant then none grow... 
@@ -76,7 +76,7 @@ ec_srs_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist){
     
     #*** New matrix
     bigM[,,tt] <- M_new # Grab the appropriate matrix for this timestep
-
+    
     #*** Checks
     #print(c(rowSums(M_new), "total",sum(M_new)))
     if(any(colSums(M_new)>1.001)){print(c(sum(M_new[,which(colSums(M_new>1.001))]),"colsums",colSums(M_new,"ERROR in colsums of M")));break}
@@ -110,8 +110,14 @@ ec_srs_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt){
   setwd(home) # might have para in different place for different models 
   para<-read.csv("data/para_ecoli.csv",header=TRUE,check.names=F,stringsAsFactors = FALSE)[,1:2]
   for(i in 1:length(para[,1])){assign(para[i,1],para[i,2])}
-  vary_n = c("omega","kk") 
-  if(length(vary)>0){for(i in 1:length(vary)){assign(vary_n[i],vary[i])}}
+  vary_n = c("kk","omega") 
+  
+  if(length(vary) > 0){
+    if(length(vary) < 3){for(i in 1:length(vary)){assign(vary_n[i],vary[i])}
+    }else{ assign("kk",vary[1]); assign("omega",vary[2:length(vary)])}
+  }
+  # make a matrix of omega values
+  if(length(omega)==1){omega <- matrix(omega, 1, endp)}
   
   # Correct for timestep
   mu<-mu*dt;  beta<-beta*dt;
@@ -135,12 +141,12 @@ ec_srs_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt){
   lambda<-matrix(0,1,endp)
   
   vs_mic1 <- seq(0.1,32,length.out = mres); 
-  vs_rel1 <- pmax((vs_mic1 - omega),0)/vs_mic1 # constant 
+  vs_rel1 <- pmax((vs_mic1 - omega[1]),0)/vs_mic1 # constant 
   lambda[1] = sum(colSums(acqdistn)*seq(1/nfit,1,1/nfit)) * sum(rowSums(acqdistn)*vs_rel1) * beta * B[1] # function outputs just meanfit when all popns 0
   
   # Store place
   meanf<-c(0,0);
-  print(c("mu",mu,"beta",beta,"eps",eps,"kk",kk,"omega",omega))
+  print(c("mu",mu,"beta",beta,"eps",eps,"kk",kk,"mean_omega",mean(omega)))
   
   #*** Main model dynamics
   for(i in 1:endp){
@@ -148,19 +154,22 @@ ec_srs_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt){
     
     #print(c("ks,kr",ks,kr,X$meanfit,lambdas))
     # Dynamics
-    U[i+1] =  U[i] + mu*(B[i]) - lambda*(U[i]/(U[i] + kk))
+    U[i+1] =  U[i] + mu*B[i] - lambda*(U[i]/(U[i] + kk))
     B[i+1] =  B[i] + lambda*(U[i]/(U[i] + kk)) - mu*B[i] 
     
     # Mean fitness update and foi
     X<-ec_srs_meanfit_varsr(M,eps*lambda*(U[i]/(U[i] + kk)),(1-eps)*lambda*(U[i]/(U[i] + kk)),
-                            omega,B[i]*(1 - mu),nfit,mres,acqdist)
+                            omega[i],B[i]*(1 - mu),nfit,mres,acqdist)
     # Update fitness
-    lambda[i+1] = X$meanfit * X$meanres * beta * B[i+1]   
+    lambda[i+1] = X$meanfit * X$meanres * beta * B[i]   
     
     # Store
     M<-X$bigM
     meanf<-rbind(meanf,c(X$meanfit,X$meanres))
+    
   }
+  
+  
   
   #*** Storing and output
   All<-c();D<-c()
