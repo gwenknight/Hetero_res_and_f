@@ -58,12 +58,12 @@ ec_srs_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist){
         Mf<-colSums(M_temp) # Proportions at each FITNESS level
         pastmean=sum( Mf*vf )
         M_temp <- t(t(M_temp) * vf / pastmean)
-        print(sum(M_temp))
+        
         # RESISTANCE
         Mr<-rowSums(M_temp) # = rowSums(M_new) same # Proportions at each RESISTANCE level
         pastmean=sum( Mr*vs_rel )
         if(pastmean > 0){ M_temp <- vs_rel*M_temp/pastmean } # Otherwise leave M_temp as is. 
-        print(c("2",sum(M_temp)))
+        
         # new transmission are then distributed
         new_b = M_temp 
         
@@ -114,7 +114,7 @@ ec_srs_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt){
   if(length(vary)>0){for(i in 1:length(vary)){assign(vary_n[i],vary[i])}}
   
   # Correct for timestep
-  mu<-mu*dt;  beta<-beta*dt;    eps<-eps*dt 
+  mu<-mu*dt;  beta<-beta*dt;
   
   #*** Build and intialise population
   U<-matrix(0,1,endp);      B<-matrix(0,1,endp);
