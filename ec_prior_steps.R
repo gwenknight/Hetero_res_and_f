@@ -6,83 +6,59 @@ home<-"~/Documents/Hetero_res_and_f/"
 plots<-paste(home,"plots",sep="")
 setwd(home)
 library(mvtnorm);library(plyr); library(ggplot2);library(reshape2);library(deSolve);library(grid);library(gtools); library(directlabels); library(mvtnorm)
-source("ec_generalised_function_withr.R")
+#source("ec_norsdiff_generalised_function.R")
 theme_set(theme_bw(base_size = 34))
 ## Key parameters
 dt<-0.1 # 1/10th of a generation
 endp<-200*1/dt
 
 #************************************************************************************************************************
-## Step 1. Fit to get, in the absence of antibiotics, 80% of the population is susceptible after 10 generations. 
+## Step 1. Fit to get, in the absence of antibiotics, 90% of the population is bacteria at equilibrium
+# in absence of antibiotics
+# bugs have high relative fitness
 para<-read.csv("data/para_ecoli.csv",header=TRUE,check.names=F,stringsAsFactors = FALSE)[,1:2]
 for(i in 1:length(para[,1])){assign(para[i,1],para[i,2])}
 # Correct for timestep
-mu<-mu*dt;omega<-(omega)*dt;beta<-beta*dt;eps<-eps*dt
+mu<-mu*dt;beta<-beta*dt;
 
 # Initial conditions
 # 99% of the culture is space -> 1% is bug
-initial<-c(99,1,0); N=sum(initial)
-U<-matrix(0,1,endp); S<-matrix(0,1,endp); R<-matrix(0,1,endp);
-U[1]<-initial[1]; S[1]<-initial[2]; R[1]<-initial[3];
+initial<-c(99,1); N=sum(initial)
+U<-matrix(0,1,endp); B<-matrix(0,1,endp); # JUST ONE TYPE OF BUG
+U[1]<-initial[1]; B[1]<-initial[2];
 
-lambdasv<-matrix(0,1,endp);lambdarv<-matrix(0,1,endp);
-lambdasv[1]=beta * S[1]/N; lambdarv[1]= 0 * beta * R[1]/N ; 
+lambdav<-matrix(0,1,endp);
+lambdav[1]=beta  # no quite right but ok for now? (equilibrium interested in)
 
 assign("omega",0) # No treatment
 
 for(i in 1:endp){
-  lambdas=lambdasv[i];
+  lambda=lambdav[i];
   
   # NEW Dynamics
-  U[i+1] =  U[i] + mu*(S[i]) - (lambdas)*(U[i]/(U[i] + kk)) 
-  S[i+1] =  S[i] + lambdas*(U[i]/(U[i] + kk)) - mu*S[i]
+  U[i+1] =  U[i] + mu*(B[i]) - lambda*(U[i]/(U[i] + kk))
+  B[i+1] =  B[i] + lambda*(U[i]/(U[i] + kk)) - mu*B[i] 
+  
+  #U[i+1] =  U[i] + mu*(S[i]) - (lambdas)*(U[i]/(U[i] + kk)) 
+  #S[i+1] =  S[i] + lambdas*(U[i]/(U[i] + kk)) - mu*S[i]
   
   # Dynamics
   #U[i+1] =  U[i] + mu*(S[i]) - (lambdas)*U[i] + omega*ks*S[i] 
   #S[i+1] =  S[i] + lambdas*U[i] - (mu + omega*ks)*S[i] #- eps * S[i]
   #lambdasv[i+1] = beta * S[i+1] / 100; 
-  lambdasv[i+1] = max(0,(1-omega)/1) * beta * S[i+1] / S[i+1]; 
+  lambdav[i+1] = max(0,(1-omega)/1) * beta * B[i+1] 
 }  
 
-all<-as.data.frame(cbind(seq(0,200,dt),U,S)); colnames(all)<-c("time","U","S")
+all<-as.data.frame(cbind(seq(0,200,dt),U,B)); colnames(all)<-c("time","U","B")
 allm<-melt(all, id.vars="time")
 all[20/dt+1,]
-p<-ggplot(allm,aes(x=time,y=value,colour=variable))+geom_line(size=2) + scale_x_continuous("Generations",lim=c(0,30))
+p<-ggplot(allm,aes(x=time,y=value,colour=variable))+geom_line(size=2) + scale_x_continuous("Generations",lim=c(0,30)) +
+  scale_y_continuous("Percentage of population",limits = c(0,100)) + scale_colour_discrete("",labels = c("Space","Total bug"))
 p # Fitted beta and mu to give 80% susceptible at equilibrium. 
+setwd(plots)
+ggsave("initial.pdf",width=12,height=8)
 
 #************************************************************************************************************************
-## Step 2. Introduce resistance
-### First none at the beginning... only can arise by eps and eps v small. 
-for(i in 1:endp){
-  lambdas=lambdasv[i];lambdar=lambdarv[i];# krr = krv[i]
-  
-  # Dynamics
-  #U[i+1] =  U[i] + mu*(S[i]+R[i]) - (lambdas+lambdar)*U[i] + omega*ks*S[i] + omega*kr*R[i]
-  #S[i+1] =  S[i] + lambdas*U[i] - (mu + omega*ks)*S[i] - eps * S[i]
-  #R[i+1] =  R[i] + lambdar*U[i] - (mu + omega*kr)*R[i] + eps * S[i] 
-  #lambdasv[i+1] = beta * S[i+1] / 100; 
-  #lambdarv[i+1] = f * beta * R[i+1] / 100;   #X$meanfit * beta * R[i+1]/N; 
-  
-  # NEW Dynamics
-  U[i+1] =  U[i] + mu*(S[i]+R[i]) - (lambdas+lambdar)*(U[i]/(U[i] + kk)) 
-  S[i+1] =  S[i] + lambdas*(U[i]/(U[i] + kk)) - mu*S[i] - eps * S[i]
-  R[i+1] =  R[i] + lambdar*(U[i]/(U[i] + kk)) - mu*R[i] + eps * S[i] 
-  
-  lambdasv[i+1] =     max(0,(1-omega)/1) * beta * S[i+1] / ( S[i+1] + R[i+1] );
-  lambdarv[i+1] = f * max(0,(32-omega)/32) * beta * R[i+1] / ( S[i+1] + R[i+1] );   # resistant strain has an MIC of 6
-  
-} 
-
-all<-as.data.frame(cbind(seq(0,endp,1)*dt,U,S,R)); colnames(all)<-c("time","U","S","R")
-#all$totalbug<-all$S + all$R; all$S<-100*all$S/all$totalbug; all$R<-100*all$R/all$totalbug
-allm<-melt(all, id.vars="time")
-cbPaletteSR <- c("#009E73","#0072B2","#D55E00", "#CC79A7", "#E69F00", "#56B4E9", "#F0E442" )
-p<-ggplot(allm,aes(x=time,y=value,colour=variable))+geom_line(size=4) + scale_x_continuous("Generations",lim=c(0,endp*dt))
-p<-p+scale_colour_manual("Sub-\npopulation",values=cbPaletteSR,labels = c("Space","Susceptible","Resistant","Total bug")) + scale_y_continuous("Percentage of population")
-p # Get very few resistance as only eps generation
-setwd(plots)
-ggsave("initial_nor.pdf",width=12,height=8)
-
 ### Second set some at beginning - should get even level + little extra via eps?
 # Same fitness
 initial<-c(98,1,1); N=sum(initial)
