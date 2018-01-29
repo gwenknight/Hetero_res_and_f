@@ -32,6 +32,7 @@ lambdav[1]=beta  # no quite right but ok for now? (equilibrium interested in)
 
 assign("omega",0) # No treatment
 
+
 for(i in 1:endp){
   lambda=lambdav[i];
   
@@ -52,7 +53,7 @@ for(i in 1:endp){
 all<-as.data.frame(cbind(seq(0,200,dt),U,B)); colnames(all)<-c("time","U","B")
 allm<-melt(all, id.vars="time")
 all[20/dt+1,]
-p<-ggplot(allm,aes(x=time,y=value,colour=variable))+geom_line(size=2) + scale_x_continuous("Generations",lim=c(0,30)) +
+p<-ggplot(allm,aes(x=time,y=value,colour=variable))+geom_line(size=2) + scale_x_continuous("Generations",lim=c(0,50)) +
   scale_y_continuous("Percentage of population",limits = c(0,100)) + scale_colour_discrete("",labels = c("Space","Total bug"))
 p # Fitted beta and mu to give 80% susceptible at equilibrium. 
 setwd(plots)
