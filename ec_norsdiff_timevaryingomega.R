@@ -212,7 +212,7 @@ omega2 <- c(matrix(16,1,20*(1/dt)),matrix(0,1,tsteps - 20*(1/dt)))
 omega3 <- c(matrix(16,1,30*(1/dt)),matrix(0,1,tsteps - 30*(1/dt)))
 omega4 <- c(matrix(16,1,40*(1/dt)),matrix(0,1,tsteps - 40*(1/dt)))
 omegam <- as.data.frame(cbind(seq(1,tsteps),omega1,omega2,omega3, omega4)); colnames(omegam) <- c("time","1","2","3","4"); momegam <- melt(omegam,id.vars = "time")
-go<-ggplot(momegam,aes(x=time,y=value,colour=variable)) + geom_line(size=2) + scale_x_continuous(lim=c(0,200), breaks = seq(0,200,50), labels = dt*seq(0,200,50)) + scale_y_continuous("Omega") + scale_color_discrete("")
+go<-ggplot(momegam,aes(x=time,y=value,colour=variable)) + geom_line(size=2) + scale_x_continuous(lim=c(0,500), breaks = seq(0,500,50), labels = dt*seq(0,500,50)) + scale_y_continuous("Omega") + scale_color_discrete("")
 ggsave(paste(pref,"norsd_omegaconcs_06.pdf",sep=""))
 
 kk <- 500
@@ -356,7 +356,7 @@ omega2 <- c(matrix(30,1,20*(1/dt)),matrix(0,1,tsteps - 20*(1/dt)))
 omega3 <- c(matrix(0.4,1,50*(1/dt)),matrix(0,1,tsteps - 50*(1/dt)))
 omega4 <- c(matrix(0.4,1,100*(1/dt)),matrix(0,1,tsteps - 100*(1/dt)))
 omegam <- as.data.frame(cbind(seq(1,tsteps),omega1,omega2,omega3, omega4)); colnames(omegam) <- c("time","1","2","3","4"); momegam <- melt(omegam,id.vars = "time")
-go<-ggplot(momegam,aes(x=time,y=value,colour=variable)) + geom_line(size=2) + scale_x_continuous(lim=c(0,200), breaks = seq(0,200,50), labels = dt*seq(0,200,50)) + scale_y_continuous("Omega") + scale_color_discrete("")
+go<-ggplot(momegam,aes(x=time,y=value,colour=variable)) + geom_line(size=2) + scale_x_continuous(lim=c(0,1100), breaks = seq(0,1100,100), labels = dt*seq(0,1100,100)) + scale_y_continuous("Omega") + scale_color_discrete("")
 ggsave(paste(pref,"norsd_omegaconcs_06.pdf",sep=""))
 
 kk <- 500
