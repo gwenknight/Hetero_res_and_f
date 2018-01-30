@@ -37,6 +37,7 @@ iniv<-c(98,1) # Mostly space
 #iniv<-c(60,39,1)
 dt=0.1
 tsteps<-500*(1/dt)
+kk <- 500
 
 
 ####*** LOAD TO HERE ***######################################################################################################################################################################################################################################################################################################
@@ -47,5 +48,29 @@ submic_M <- c(1,1,1,1) # Linear decline
 pref <- "Constant_omega_"
 plot_diff_acd_output(acqdistn,"~/Documents/Hetero_res_and_f/plots",01, omega_M, submic_M, wildtype,pref)
 
+####*** # (2) run with timevarying omega ***######################################################################################################################################################################################################################################################################################################
+omega_M <- rbind(c(matrix(16,1,20),matrix(0,1,tsteps - 20)),c(16,16*exp(-1*(2:20)),matrix(0,1,tsteps-20)),
+                 c(matrix(16,1,20),matrix(0.4,1,20),matrix(16,1,20),matrix(0,1,tsteps - 60)), c(matrix(0,1,20),matrix(16,1,tsteps - 20)))
+submic_M <- c(1,1,1,1) # Linear decline
+pref <- "TV_omega_"
+plot_diff_acd_output(acqdistn,"~/Documents/Hetero_res_and_f/plots",01, omega_M, submic_M, wildtype,pref)
+
+####*** # (3) run with stepped omega ***######################################################################################################################################################################################################################################################################################################
+omega_M <- rbind(c(matrix(16,1,10*(1/dt)),matrix(0,1,tsteps - 10*(1/dt))),
+                 c(matrix(16,1,20*(1/dt)),matrix(0,1,tsteps - 20*(1/dt))),
+                 c(matrix(16,1,30*(1/dt)),matrix(0,1,tsteps - 30*(1/dt))),
+                 c(matrix(16,1,40*(1/dt)),matrix(0,1,tsteps - 40*(1/dt))))
+submic_M <- c(1,1,1,1) # Linear decline
+pref <- "Stepped_omega_"
+plot_diff_acd_output(acqdistn,"~/Documents/Hetero_res_and_f/plots",01, omega_M, submic_M, wildtype,pref)
+
+####*** # (4) run with high short or long low omega ***######################################################################################################################################################################################################################################################################################################
+omega_M <- rbind(c(matrix(30,1,10*(1/dt)),matrix(0,1,tsteps - 10*(1/dt))),
+                 c(matrix(30,1,20*(1/dt)),matrix(0,1,tsteps - 20*(1/dt))),
+                 c(matrix(0.4,1,50*(1/dt)),matrix(0,1,tsteps - 50*(1/dt))),
+                 c(matrix(0.4,1,100*(1/dt)),matrix(0,1,tsteps - 100*(1/dt))))
+submic_M <- c(1,1,1,1) # Linear decline
+pref <- "HSoLL_"
+plot_diff_acd_output(acqdistn,"~/Documents/Hetero_res_and_f/plots",01, omega_M, submic_M, wildtype,pref)
 
 
