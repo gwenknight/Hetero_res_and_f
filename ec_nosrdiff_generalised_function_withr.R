@@ -270,24 +270,35 @@ plot_diff_acd_output <- function(acqdistn,plots,num, omega_M, submic_M, wildtype
   p<-p + scale_x_continuous("Resistance level",breaks=c(0,0.2,0.4,0.6,0.8,1)) + scale_y_continuous("Proportion") + scale_fill_brewer("Fitness \nlevel",palette="Reds") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
   p
   setwd(plots)
-  ggsave(paste(pref,"_acqdistn_",num,".pdf",sep=""),width=14,height=10)
+  ggsave(paste(num,"_",pref,"_acqdistn_",num,".pdf",sep=""),width=14,height=10)
   
-  ### What to plot
+  ### What to run
+  omegam <- as.data.frame(matrix(0,tsteps,5))
+  omegam[,1] <- seq(1,tsteps); colnames(omegam) <- c("time","1","2","3","4"); 
   if(is.vector(omega_M)){
     for(iij in 1:length(omega_M)){
       omega_value <- omega_M[iij]
       submic_value <- submic_M[iij]
-      assign(paste("omega_",ii,sep=""),omega_M[iij])
+      assign(paste("omega",iij,sep=""),omega_M[iij])
       assign(paste("Sv",iij,sep=""),ec_srs_funcf_mean_varsr(tsteps,home, c(kk,omega_value),iniv,M0,acqdistn,dt,submic_value))
+      omegam[,(iij+1)]<-omega_value # store
     }
+    
   } else {
     for(iij in 1:dim(omega_M)[1]){ # each row a different omega
       omega_value <- omega_M[iij,]
       submic_value <- submic_M[iij]
-      assign(paste("omega",iji,sep=""),omega_M[iji,1])
+      assign(paste("omega",iij,sep=""),omega_M[iij,1])
       assign(paste("Sv",iij,sep=""),ec_srs_funcf_mean_varsr(tsteps,home, c(kk,omega_value),iniv,M0,acqdistn,dt,submic_value))
+      omegam[,(iij+1)]<-omega_value
     }
   }
+  
+  ### What does omega do? 
+  momegam <- melt(omegam,id.vars = "time")
+  go<-ggplot(momegam,aes(x=time,y=value,colour=variable)) + geom_line(size=2) + scale_x_continuous(breaks = seq(0,tsteps,tsteps / 10), labels = dt*seq(0,tsteps,tsteps/10)) + scale_y_continuous("Omega") + scale_color_discrete("")
+  setwd(plots)
+  ggsave(paste(num,"_",pref,"norsd_omegaconcs.pdf",sep=""))
   
   # What happens? 
   mm1<-c() ; mm2<-c() ; mm3<-c() ; mm4<-c() 
@@ -312,26 +323,26 @@ plot_diff_acd_output <- function(acqdistn,plots,num, omega_M, submic_M, wildtype
   p1<-p1 + theme(axis.text.x = element_text(angle = 90, hjust = 1))
   p1<-p1 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
   p1
-  ggsave(paste(pref,"norsd_Array_w=", omega1,"_06.pdf",sep=""))
+  ggsave(paste(num,"_",pref,"norsd_Array_w=", omega1,"_06.pdf",sep=""))
   p2<-ggplot(mm2[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 2,sep=""))
   p2<-p2 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide=FALSE)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
   p2<-p2 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
   p2
-  ggsave(paste(pref,"norsd_Array_w=",omega2,"_06.pdf",sep=""))
+  ggsave(paste(num,"_",pref,"norsd_Array_w=",omega2,"_06.pdf",sep=""))
   p3<-ggplot(mm3[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 3,sep=""))
   p3<-p3 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide = FALSE)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
   p3<-p3 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
   p3
-  ggsave(paste(pref,"norsd_Array_w=",omega3,"_06.pdf",sep=""))
+  ggsave(paste(num,"_",pref,"norsd_Array_w=",omega3,"_06.pdf",sep=""))
   p4<-ggplot(mm4[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 4,sep=""))
   p4<-p4 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide=FALSE)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
   p4<-p4 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
   p4
-  ggsave(paste(pref,"norsd_Array_w=",omega4,"_06.pdf",sep=""))
+  ggsave(paste(num,"_",pref,"norsd_Array_w=",omega4,"_06.pdf",sep=""))
   
   
   setwd(plots)
-  pdf(paste(pref,"norsd_Array_w_all.pdf",sep=""),width=18,height=18)
+  pdf(paste(num,"_",pref,"norsd_Array_w_all.pdf",sep=""),width=18,height=18)
   multiplot(p1,p2,p4,p3,cols=2)
   dev.off()
   
@@ -346,7 +357,7 @@ plot_diff_acd_output <- function(acqdistn,plots,num, omega_M, submic_M, wildtype
   Msrm <- melt(Musr, id.vars = c("t","pop"))
   facet_names <- c(`0` = "U", `1` = "B", `3` = "mean fit", `4` = "mean res", `5` = "Highest fit/res")
   ggplot(Msrm, aes(x=t, y = value, colour = variable)) + geom_line() + facet_wrap(~pop,labeller = as_labeller(facet_names), scales = "free")
-  ggsave(paste(pref,"norsd_TimeSeries_output_06.pdf",sep=""))
+  ggsave(paste(num,"_",pref,"norsd_TimeSeries_output_06.pdf",sep=""))
   # number in highest fitness changes but mean r and f don't? 
   
   # How is the bacterial load affected? want to control.
@@ -354,60 +365,61 @@ plot_diff_acd_output <- function(acqdistn,plots,num, omega_M, submic_M, wildtype
   Mbm <- melt(Mb, id.vars = c("t","pop"))
   pmb<-ggplot(Mbm, aes(x=t, y = value, colour = variable)) + geom_line() + scale_x_continuous(lim = c(0,1200)) + 
     scale_y_continuous(lim = c(0,100))
-  ggsave(paste(pref,"norsd_TimeSeries_Boutput_06.pdf",sep=""))
+  ggsave(paste(num,"_",pref,"norsd_TimeSeries_Boutput_06.pdf",sep=""))
   
   # plots only proportion with "resistance" - not background initial resistance
-  M20n <- Sv1$M;M10n <- Sv2$M;M15n <- Sv3$M;M05n <- Sv4$M
+  M10n <- Sv1$M;M20n <- Sv2$M;M30n <- Sv3$M;M40n <- Sv4$M
   susr <- wildtype[1]; susf <- wildtype[2]
-  M20n[susr,susf,] <- 0; M10n[susr,susf,] <- 0; M05n[susr,susf,] <- 0; M15n[susr,susf,] <- 0; 
-  for (i in 1:dim(Sv4$M)[3]){ M20n[,,i] <- M20n[,,i]/sum(M20n[,,i]) # re-normalise
-  M15n[,,i] <- M15n[,,i]/sum(M15n[,,i]) # re-normalise
-  M10n[,,i] <- M10n[,,i]/sum(M10n[,,i]) # re-normalise
-  M05n[,,i] <- M05n[,,i]/sum(M05n[,,i])} # re-normalise
+  M10n[susr,susf,] <- 0; M20n[susr,susf,] <- 0; M30n[susr,susf,] <- 0; M40n[susr,susf,] <- 0; 
+  for (i in 1:dim(Sv4$M)[3]){ M10n[,,i] <- M10n[,,i]/sum(M10n[,,i]) # re-normalise
+  M20n[,,i] <- M20n[,,i]/sum(M20n[,,i]) # re-normalise
+  M30n[,,i] <- M30n[,,i]/sum(M30n[,,i]) # re-normalise
+  M40n[,,i] <- M40n[,,i]/sum(M40n[,,i])} # re-normalise
   
   # What happens? 
-  mm20<-c() ; mm10<-c() ; mm05<-c() ; mm15<-c() 
-  ll<-dim(Sv4$M)[3];
+  mm1<-c() ; mm2<-c() ; mm3<-c() ; mm4<-c() 
+  ll<-dim(Sv1$M)[3];
   ss<-seq(0,ll,1/dt) # Don't want to grab all 
   for(i in 2:length(ss)){
-    mm220<-as.data.frame(melt(M20n[,,ss[i]])); 
-    mm215<-as.data.frame(melt(M15n[,,ss[i]])); 
-    mm210<-as.data.frame(melt(M10n[,,ss[i]])); 
-    mm205<-as.data.frame(melt(M05n[,,ss[i]])); 
-    mm220$tstep=ss[i]*dt; mm215$tstep=ss[i]*dt; mm210$tstep=ss[i]*dt; mm205$tstep=ss[i]*dt # To go to generations
-    mm20<-rbind(mm20,mm220);mm15<-rbind(mm15,mm215); mm10<-rbind(mm10,mm210) ; mm05<-rbind(mm05,mm205) 
+    mm01<-as.data.frame(melt(M10n[,,ss[i]])); 
+    mm02<-as.data.frame(melt(M20n[,,ss[i]])); 
+    mm03<-as.data.frame(melt(M30n[,,ss[i]])); 
+    mm04<-as.data.frame(melt(M40n[,,ss[i]])); 
+    mm01$tstep=ss[i]*dt; mm02$tstep=ss[i]*dt; mm03$tstep=ss[i]*dt; mm04$tstep=ss[i]*dt # To go to generations
+    mm1<-rbind(mm1,mm01);mm2<-rbind(mm2,mm02); mm3<-rbind(mm3,mm03) ; mm4<-rbind(mm4,mm04) 
   } 
-  colnames(mm20)<-c("x","y","z","t"); colnames(mm15)<-c("x","y","z","t"); colnames(mm10)<-c("x","y","z","t") ;colnames(mm05)<-c("x","y","z","t")
+  colnames(mm1)<-c("x","y","z","t"); colnames(mm2)<-c("x","y","z","t"); colnames(mm3)<-c("x","y","z","t") ;colnames(mm4)<-c("x","y","z","t")
+  setwd(plots)
   
   # plots
-  p1<-ggplot(mm20[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 1,sep=""))
+  p1<-ggplot(mm1[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 1,sep=""))
   p1<-p1 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide = FALSE)
   p1<-p1 + theme(axis.text.x = element_text(angle = 90, hjust = 1))
   p1<-p1 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
   p1
-  ggsave(paste(pref,"norsdR_Array_w=",omega1,"_06.pdf",sep=""))
-  p2<-ggplot(mm15[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 2,sep=""))
+  ggsave(paste(num,"_",pref,"norsdR_Array_w=",omega1,"_06.pdf",sep=""))
+  p2<-ggplot(mm2[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 2,sep=""))
   p2<-p2 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide=FALSE)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
   p2<-p2 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
   p2
-  ggsave(paste(pref,"norsdR_Array_w=",omega2,"_06.pdf",sep=""))
-  p3<-ggplot(mm10[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 3,sep=""))
+  ggsave(paste(num,"_",pref,"norsdR_Array_w=",omega2,"_06.pdf",sep=""))
+  p3<-ggplot(mm3[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 3,sep=""))
   p3<-p3 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide = FALSE)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
   p3<-p3 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
   p3
-  ggsave(paste(pref,"norsdR_Array_w=",omega3,"_06.pdf",sep=""))
-  p4<-ggplot(mm05[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 4,sep=""))
+  ggsave(paste(num,"_",pref,"norsdR_Array_w=",omega3,"_06.pdf",sep=""))
+  p4<-ggplot(mm4[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 4,sep=""))
   p4<-p4 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide=FALSE)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
   p4<-p4 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
   p4
-  ggsave(paste(pref,"norsdR_Array_w=",omega4,"_06.pdf",sep=""))
+  ggsave(paste(num,"_",pref,"norsdR_Array_w=",omega4,"_06.pdf",sep=""))
   
   setwd(plots)
-  pdf(paste(pref,"norsdR_Array_w_all.pdf",sep=""),width=18,height=18)
+  pdf(paste(num,"_",pref,"norsdR_Array_w_all.pdf",sep=""),width=18,height=18)
   multiplot(p1,p2,p4,p3,cols=2)
   dev.off()
   
-  pdf(paste(pref,"all_norsd_Array_w_all.pdf",sep = ""),width=18,height=18)
+  pdf(paste(num,"_",pref,"all_norsd_Array_w_all.pdf",sep = ""),width=18,height=18)
   multiplot(go,p1,p2,pmb,p4,p3,cols=2)
   dev.off()
   
