@@ -63,7 +63,7 @@ stoch_ec_srs_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist,submic){
     
     #*** How are the acquisitions distributed? Input STOCHASTIC
     # sample using acqdist
-    new_a <- rMydist_a(acq,acqdist)
+    new_a <- acqdist
     
     #*** How are the new growth bugs distributed?
     M_temp<-M_new
@@ -93,7 +93,10 @@ stoch_ec_srs_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist,submic){
     
     #*** Assign and update M
     # nA = number of actives left after treatment removed (affects distribution) and death (doesn't affect)
-    M_new = M_new * nA / (nA+acq+trans) + new_a * acq / (nA+acq+trans) + new_b * trans / (nA+acq+trans) 
+    #M_new = M_new * nA / (nA+acq+trans) + new_a * acq / (nA+acq+trans) + new_b * trans / (nA+acq+trans) 
+    
+    M_new = M_new * nA + rMydist_a(acq, new_a) + rMydist_a(trans, new_b) # use numbers of events to select
+    M_new = M_new / (nA+acq+trans) 
     
     #*** New matrix
     bigM[,,tt] <- M_new # Grab the appropriate matrix for this timestep
@@ -171,18 +174,38 @@ stoch_ec_srs_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,subm
   
   #*** Main model dynamics
   for(i in 1:endp){
-    lambda=lambda[i]
     
-    #print(c("ks,kr",ks,kr,X$meanfit,lambdas))
-    # Dynamics
-    U[i+1] =  U[i] + mu*B[i] - lambda*(U[i]/(U[i] + kk))
-    B[i+1] =  B[i] + lambda*(U[i]/(U[i] + kk)) - mu*B[i] 
+    # Deaths - uniform sample. If less than mu then die (Monte Carlo?) 
+    # mu is the probability in this time step that the bacteria dies
+    mu_n <- runif(B[i],min = 0, max = 1)
+    die_b <- length(which(mu_n < mu))
+    U[i+1] = U[i] + die_b
+    B[i+1] = B[i] - die_b
+    
+    # Births - uniform sample. 
+    # birth is the probability in this time step that the bacteria multiplies
+    bi_n <- runif(B[i+1],min = 0, max = 1) # laready killed some - those that were going to die wouldn't have multiplied
+    bi_b <- length(which(bi_n < lambda[i])) # X$meanfit * X$meanres * beta => past fitness
+    # Dynamics 
+    U[i+1] =  U[i] - bi_b
+    B[i+1] =  B[i] + bi_b
+    
+    # mutations
+    # beta: mean and var = eps (e)
+    # mean = a/a+b. var = e = ab/((a+b)^2(a+b+1)) => a = -e^2. b = e(e-1) # cant have negative shape
+    shape1_e = 2 # bigger gives smaller variance
+    shape2_e = shape1_e*(1-eps)/eps # to give mean at eps
+    eps_e = rbeta(1, shape1_e, shape2_e)
+    # number with mutation
+    mut_e <- round(eps_e*bi_b,0)
     
     # Mean fitness update and foi
-    X<-ec_srs_meanfit_varsr(M,eps*lambda*(U[i]/(U[i] + kk)),(1-eps)*lambda*(U[i]/(U[i] + kk)),
-                            omega[i],B[i]*(1 - mu),nfit,mres,acqdist,submic)
+    X<-ec_srs_meanfit_varsr(M,mut_e,bi_b - mut_e,
+                            omega[i],B[i] - die_b,
+                            nfit,mres,acqdist,submic)
+    
     # Update fitness
-    lambda[i+1] = X$meanfit * X$meanres * beta * B[i]   
+    lambda[i+1] = X$meanfit * X$meanres * beta  # no B[i] here anymore
     
     # Store
     M<-X$bigM
