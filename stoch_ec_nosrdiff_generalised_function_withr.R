@@ -98,17 +98,18 @@ stoch_ec_srs_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist,submic){
     M_new = M_new * nA + rMydist_a(acq, new_a) + rMydist_a(trans, new_b) # use numbers of events to select
     M_new = M_new / (nA+acq+trans) 
     
+    
     #*** New matrix
     bigM[,,tt] <- M_new # Grab the appropriate matrix for this timestep
-    
+  
     #*** Checks
-    #print(c(rowSums(M_new), "total",sum(M_new)))
+    print(c(rowSums(M_new), "total",sum(M_new)))
     if(any(colSums(M_new)>1.001)){print(c(sum(M_new[,which(colSums(M_new>1.001))]),"colsums",colSums(M_new,"ERROR in colsums of M")));break}
     if(any(rowSums(M_new)>1.001)){print(c(sum(M_new[,which(rowSums(M_new>1.001))]),"rowsums",rowSums(M_new,"ERROR in rowsums of M")));break}
-    
+    print("here")
     #*** Calculate mean fitness
     meanfit = sum(colSums(bigM[,,tt])*vf)
-    
+    print(meanfit)
     #*** Calculate mean susceptibility
     meanres = sum(rowSums(bigM[,,tt])*vs_rel)
   }
@@ -174,6 +175,7 @@ stoch_ec_srs_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,subm
   
   #*** Main model dynamics
   for(i in 1:endp){
+    print(i)
     
     # Deaths - uniform sample. If less than mu then die (Monte Carlo?) 
     # mu is the probability in this time step that the bacteria dies
@@ -191,25 +193,23 @@ stoch_ec_srs_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,subm
     B[i+1] =  B[i] + bi_b
     
     # mutations
-    # beta: mean and var = eps (e)
-    # mean = a/a+b. var = e = ab/((a+b)^2(a+b+1)) => a = -e^2. b = e(e-1) # cant have negative shape
-    shape1_e = 2 # bigger gives smaller variance
-    shape2_e = shape1_e*(1-eps)/eps # to give mean at eps
-    eps_e = rbeta(1, shape1_e, shape2_e)
-    # number with mutation
-    mut_e <- round(eps_e*bi_b,0)
+    mut_a <- runif(bi_b, min = 0, max = 1)
+    mut_e <- length(which(mut_a < mu))
     
+    print(c("num with mut", mut_e,"bi_b",bi_b))
     # Mean fitness update and foi
-    X<-ec_srs_meanfit_varsr(M,mut_e,bi_b - mut_e,
+    X<-stoch_ec_srs_meanfit_varsr(M,mut_e,bi_b - mut_e,
                             omega[i],B[i] - die_b,
                             nfit,mres,acqdist,submic)
     
     # Update fitness
+    if(X > 0){
     lambda[i+1] = X$meanfit * X$meanres * beta  # no B[i] here anymore
     
     # Store
     M<-X$bigM
     meanf<-rbind(meanf,c(X$meanfit,X$meanres))
+    }else{meanf<-rbind(meanf,c(0,0))}
     
   }
   
@@ -276,7 +276,7 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 ######**********************************************************************************  *******#####
 ## Plot all output for different acqdistns
 # new
-plot_diff_acd_output <- function(acqdistn,plots,num, omega_M, submic_M, wildtype,pref) {
+plot_diff_acd_output_stoch <- function(acqdistn,plots,num, omega_M, submic_M, wildtype,pref) {
   # acqdistn = matrix of acqdistn
   # plots = address
   # num = identifier of acquisition distribution 
@@ -305,7 +305,7 @@ plot_diff_acd_output <- function(acqdistn,plots,num, omega_M, submic_M, wildtype
       omega_value <- omega_M[iij]
       submic_value <- submic_M[iij]
       assign(paste("omega",iij,sep=""),omega_M[iij])
-      assign(paste("Sv",iij,sep=""),ec_srs_funcf_mean_varsr(tsteps,home, c(kk,omega_value),iniv,M0,acqdistn,dt,submic_value))
+      assign(paste("Sv",iij,sep=""),stoch_ec_srs_funcf_mean_varsr(tsteps,home, c(kk,omega_value),iniv,M0,acqdistn,dt,submic_value))
       omegam[,(iij+1)]<-omega_value # store
     }
     
@@ -314,7 +314,7 @@ plot_diff_acd_output <- function(acqdistn,plots,num, omega_M, submic_M, wildtype
       omega_value <- omega_M[iij,]
       submic_value <- submic_M[iij]
       assign(paste("omega",iij,sep=""),omega_M[iij,1])
-      assign(paste("Sv",iij,sep=""),ec_srs_funcf_mean_varsr(tsteps,home, c(kk,omega_value),iniv,M0,acqdistn,dt,submic_value))
+      assign(paste("Sv",iij,sep=""),stoch_ec_srs_funcf_mean_varsr(tsteps,home, c(kk,omega_value),iniv,M0,acqdistn,dt,submic_value))
       omegam[,(iij+1)]<-omega_value
     }
   }
