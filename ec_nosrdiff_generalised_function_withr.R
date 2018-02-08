@@ -266,8 +266,8 @@ plot_diff_acd_output <- function(acqdistn,plots,num, omega_M, submic_M, wildtype
   rownames(z) <- seq(1/mres,1,1/mres);colnames(z) <- seq(1,nfit,1);
   z2<-as.data.frame(melt(z)); z2$res<-seq(1/mres,1,1/mres); colnames(z2)<-c("fitness","value","res")
   p<-ggplot(z2, aes(x=res, y=value, fill=factor(fitness))) + geom_bar(stat="identity",colour="black") + facet_grid(~fitness) 
-  p<-p + scale_x_continuous("Resistance level",breaks=c(0,0.2,0.4,0.6,0.8,1)) + scale_y_continuous("Proportion") +
-    scale_fill_brewer("Fitness \nlevel",palette="Reds") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  p<-p + scale_x_continuous("Resistance-Fitness level",breaks=c(0,0.2,0.4,0.6,0.8,1),labels = c(1,2,4,6,8,10)) + scale_y_continuous("Proportion") +
+    scale_fill_brewer("Growth-\nFitness \nlevel",palette="Reds") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
   p
   setwd(plots)
   ggsave(paste(num,"_",pref,"_acqdistn_",num,".pdf",sep=""),width=14,height=10)
@@ -363,9 +363,11 @@ plot_diff_acd_output <- function(acqdistn,plots,num, omega_M, submic_M, wildtype
   # How is the bacterial load affected? want to control.
   colnames(Mb) <- c("t", "pop",1,2,3,4)
   Mbm <- melt(Mb, id.vars = c("t","pop"))
-  pmb<-ggplot(Mbm, aes(x=t, y = value, colour = variable)) + geom_line() + scale_x_continuous(breaks = seq(0,tsteps,tsteps / 10), labels = dt*seq(0,tsteps,tsteps/10)) + 
-    scale_y_continuous(lim = c(0,100))
+  pmba<-ggplot(Mbm, aes(x=t, y = value, colour = variable)) + geom_line() + scale_x_continuous(breaks = seq(0,tsteps,tsteps / 10), labels = dt*seq(0,tsteps,tsteps/10)) + 
+    scale_y_continuous(lim = c(0,100), "Percentage") + geom_hline(yintercept = 1)  
   ggsave(paste(num,"_",pref,"norsd_TimeSeries_Boutput_06.pdf",sep=""))
+  pmb<-ggplot(Mbm, aes(x=t, y = value, colour = variable)) + geom_line() + scale_x_continuous(breaks = seq(0,tsteps,tsteps / 10), labels = dt*seq(0,tsteps,tsteps/10)) + 
+    scale_y_continuous(lim = c(0,100), "Percentage")
   
   # plots only proportion with "resistance" - not background initial resistance
   M10n <- Sv1$M;M20n <- Sv2$M;M30n <- Sv3$M;M40n <- Sv4$M
