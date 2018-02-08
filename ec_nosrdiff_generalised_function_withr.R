@@ -158,11 +158,11 @@ ec_srs_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,submic){
   mres<-dim(M)[1]
   
   #*** Initial foi
-  lambda<-matrix(0,1,endp)
+  lambda_v<-matrix(0,1,endp)
   
   vs_mic1 <- seq(0.1,32,length.out = mres); 
   vs_rel1 <- pmax((vs_mic1 - omega[1]),0)/vs_mic1 # constant 
-  lambda[1] = sum(colSums(acqdistn)*seq(1/nfit,1,1/nfit)) * sum(rowSums(acqdistn)*vs_rel1) * beta * B[1] # function outputs just meanfit when all popns 0
+  lambda_v[1] = sum(colSums(acqdistn)*seq(1/nfit,1,1/nfit)) * sum(rowSums(acqdistn)*vs_rel1) * beta * B[1] # function outputs just meanfit when all popns 0
   
   # Store place
   meanf<-c(0,0);
@@ -170,7 +170,7 @@ ec_srs_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,submic){
   
   #*** Main model dynamics
   for(i in 1:endp){
-    lambda=lambda[i]
+    lambda = lambda_v[i]
     
     #print(c("ks,kr",ks,kr,X$meanfit,lambdas))
     # Dynamics
@@ -181,7 +181,7 @@ ec_srs_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,submic){
     X<-ec_srs_meanfit_varsr(M,eps*lambda*(U[i]/(U[i] + kk)),(1-eps)*lambda*(U[i]/(U[i] + kk)),
                             omega[i],B[i]*(1 - mu),nfit,mres,acqdist,submic)
     # Update fitness
-    lambda[i+1] = X$meanfit * X$meanres * beta * B[i]   
+    lambda_v[i+1] = X$meanfit * X$meanres * beta * B[i]   
     
     # Store
     M<-X$bigM
@@ -189,8 +189,7 @@ ec_srs_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,submic){
     
   }
   
-  
-  
+
   #*** Storing and output
   All<-c();D<-c()
   All<-as.data.frame(cbind(seq(1,endp+1,1),U,B,meanf))
@@ -198,7 +197,7 @@ ec_srs_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,submic){
   # In form for plotting
   D1<-melt(All,id.vars="time")
   # What to output (storage of all vector, plus individual levels, at 5 and 50, foi s, foi r, fitness distributions and mean relative fitness over time)
-  return(list(D1=D1,U=U,B=B,lambda=lambda,M=M,meanf=meanf))
+ return(list(D1=D1,U=U,B=B,lambda_v=lambda_v,M=M,meanf=meanf))
 }
 
 ######****************************************************************************************** For multiple plots *******#####
