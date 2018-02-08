@@ -46,7 +46,7 @@ kk <- 500
 omega_M <- c(24,16,2,0.4)
 submic_M <- c(1,1,1,1) # Linear decline
 pref <- "Constant_omega_"
-plot_diff_acd_output_stoch(acqdistn,"~/Documents/Hetero_res_and_f/plots",01, omega_M, submic_M, wildtype,pref)
+plot_diff_acd_output_stoch(acqdistn,"~/Documents/Hetero_res_and_f/stoch_plots",01, omega_M, submic_M, wildtype,pref)
 
 ####*** # (2) run with timevarying omega ***######################################################################################################################################################################################################################################################################################################
 omega_M <- rbind(c(matrix(16,1,20),matrix(0,1,tsteps - 20)),c(16,16*exp(-0.1*(2:tsteps))),
