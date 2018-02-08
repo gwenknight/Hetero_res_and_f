@@ -63,6 +63,58 @@ M0[susr,susf,1] <- 1
 #############********************************************** LOAD UP TO HERE *********************************************########
 dt=0.1
 tsteps<-500*(1/dt)
+### No omega
+Sv20<-ec_srs_funcf_mean_varsr(tsteps,home, c(kk,0),iniv,M0,acqdistn,dt,1)
+# What happens? 
+mm20<-c(); ll<-dim(Sv20$M)[3];
+ss<-seq(0,ll,1/dt) # Don't want to grab all 
+for(i in 2:length(ss)){
+  mm220<-as.data.frame(melt(Sv20$M[,,ss[i]])); 
+  mm220$tstep=ss[i]*dt; 
+  mm20<-rbind(mm20,mm220);
+} 
+colnames(mm20)<-c("x","y","z","t"); 
+setwd(plots)
+# Grab a subset
+sub<-c(1/dt,100,250,500,750,1000,1500,2000,2500,seq(3000,4001,500))*dt
+w<-which(mm20[,"t"] %in% sub)
+# plots
+p1<-ggplot(mm20[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 0,sep=""))
+p1<-p1 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide = FALSE)
+p1<-p1 + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+p1<-p1 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
+p1
+ggsave(paste("norsd_Array_w=",0,"_06.pdf",sep=""))
+
+# plots only proportion with "resistance" - not background initial resistance
+M20n <- Sv20$M;
+M20n[susr,susf,] <- 0; 
+for (i in 1:dim(Sv20$M)[3]){ M20n[,,i] <- M20n[,,i]/sum(M20n[,,i])} # re-normalise
+
+# What happens? 
+mm20<-c() 
+ll<-dim(Sv20$M)[3];
+ss<-seq(0,ll,1/dt) # Don't want to grab all 
+for(i in 2:length(ss)){
+  mm220<-as.data.frame(melt(M20n[,,ss[i]])); 
+  mm220$tstep=ss[i]*dt; 
+  mm20<-rbind(mm20,mm220);
+} 
+colnames(mm20)<-c("x","y","z","t"); colnames(mm15)<-c("x","y","z","t"); colnames(mm10)<-c("x","y","z","t") ;colnames(mm05)<-c("x","y","z","t")
+
+# plots
+p1<-ggplot(mm20[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 0,sep=""))
+p1<-p1 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide = FALSE)
+p1<-p1 + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+p1<-p1 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
+p1
+ggsave(paste("norsdR_Array_w=",0,"_06.pdf",sep=""))
+
+pdf("B_no_omega.pdf")
+plot(Sv20$B,type="l", ylim = c(0,100), ylab = c("Percentage"), xlab = "Time")
+dev.off()
+
+####
 omega1 <- 24
 omega2 <- 16
 omega3 <- 2
