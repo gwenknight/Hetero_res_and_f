@@ -4,7 +4,7 @@
 
 ##*** Libraries needed
 library(mvtnorm);library(plyr); library(ggplot2);library(reshape2);library(deSolve);library(grid);library(gtools); library(directlabels); library(mvtnorm)
-theme_set(theme_gray(base_size = 24)); 
+theme_set(theme_gray(base_size = 10)); 
 ##*** Locations
 home<-"~/Documents/Hetero_res_and_f/"
 plots<-paste(home,"plots",sep="")
@@ -57,7 +57,7 @@ iniv<-c(900,100) # resource vs. bug
 #iniv<-c(60,39,1)
 # M0 now needs initial condition - mostly "susceptible"
 # vs_mic <- seq(0.1,32,length.out = m) MIC of susceptible depends on available resistance levels
-susr <- 1; susf <- 5
+susr <- 2; susf <- 5
 M0[susr,susf,1] <- 1
 
 #############********************************************** LOAD UP TO HERE *********************************************########
@@ -135,6 +135,8 @@ Msrm <- melt(Musr, id.vars = c("t","pop"))
 facet_names <- c(`0` = "U", `1` = "B", `3` = "mean fit", `4` = "mean res", `5` = "Highest fit/res")
 ggplot(Msrm, aes(x=t, y = value, colour = variable)) + geom_line() + facet_wrap(~pop,labeller = as_labeller(facet_names), scales = "free")
 ggsave("stoch_norsd_TimeSeries_output_06.pdf")
+ggplot(Msrm, aes(x=t, y = value, colour = variable)) + geom_line() + 
+  facet_wrap(~pop,labeller = as_labeller(facet_names), scales = "free") + scale_x_continuous(limits = c(0,150))
 # number in highest fitness changes but mean r and f don't? 
 
 
@@ -190,10 +192,11 @@ dev.off()
 
 
 ### Look at proportion in each of the 30 levels over time for each - facet = level
-mm20$omega = omega1; mm10$omega = omega2; mm05$omega = omega3
+mm20$omega = omega1; mm10$omega = omega2; mm05$omega = omega3; 
 mega<-as.data.frame(rbind(mm20,mm10,mm05)); colnames(mega)<-c("x","y","z","time","omega")
-mega$level = c(seq(21,25,1),seq(16,20,1),seq(11,15,1),seq(6,10,1),seq(1,5,1))
-g<-ggplot(mega,aes(x=time,y=z,colour=factor(omega))) + geom_line(size=2) + facet_wrap( ~ level, ncol=5) +  scale_colour_manual(values=cbPalette,"Abx\nLevel",breaks=c(omega1,omega2, omega3))
+ww <- sqrt(length(which(mm20$t == 1)))
+mega$level = c(seq((4*ww+1),(5*ww),1),seq((3*ww+1),(4*ww),1),seq((2*ww+1),(3*ww),1),seq((ww+1),(2*ww),1),seq(1,ww,1))
+g<-ggplot(mega,aes(x=time,y=z,colour=factor(omega))) + geom_line(size=1) + facet_wrap( ~ level, ncol=ww) +  scale_colour_manual(values=cbPalette,"Abx\nLevel",breaks=c(omega1,omega2, omega3))
 g<-g + scale_x_continuous("Generations",breaks=c(0,200,400)) + scale_y_continuous("Proportion at this level",breaks=c(0.25,0.75))+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
 g
 setwd(plots)
@@ -269,11 +272,12 @@ for(i in 2:length(ss)){
   pp205<-c(ss[i]*dt,colSums(Sv05$M[,,ss[i]]), rowSums(Sv05$M[,,ss[i]]),5)
   pp<-rbind(pp,pp220,pp210,pp205);
 } 
-pp<-as.data.frame(pp);colnames(pp)<-c("t","Fitness level 1\n(low)","Fitness level 2","Fitness level 3","Fitness level 4","Fitness level 5\n(high)","Res. level 1\n(low)","Res. level 2","Res. level 3","Res. level 4","Res. level 5\n(high)","w"); 
+pp<-as.data.frame(pp);colnames(pp)<-c("t","Fitness level 1\n(low)","Fitness level 2","Fitness level 3","Fitness level 4","Fitness level 5","Fitness level 6","Fitness level 7","Fitness level 8","Fitness level 9","Fitness level 10\n(high)",
+                                      "Res. level 1\n(low)","Res. level 2","Res. level 3","Res. level 4","Res. level 5","Res. level 6","Res. level 7","Res. level 8","Res. level 9","Res. level 10\n(high)","w"); 
 pp2<-melt(pp,id.vars = c("t","w"))
-theme_set(theme_bw(base_size = 34)); 
-g<-ggplot(pp2,aes(x=t,y=value,colour=factor(w))) + facet_wrap(~variable,ncol=5) + geom_line(size=2) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
-g<-g + scale_x_continuous("Generation") + scale_y_continuous("Proportion") + scale_colour_manual(values=cbPalette,"Abx\nlevel",labels=c(0.05,0.1,0.2))
+
+g<-ggplot(pp2,aes(x=t,y=value,colour=factor(w))) + facet_wrap(~variable,ncol=10) + geom_line(size=2) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+g<-g + scale_x_continuous("Generation") + scale_y_continuous("Proportion") #+ scale_colour_manual(values=cbPalette,"Abx\nlevel",labels=c(0.05,0.1,0.2))
 g # Suggests that although v similar proportions in the most fit fewer are in the higher resistance levels with low level antibiotics use. In fact with this model
 # the same rate of selection for no cost mutations is seen whether there is high or low anitbiotic use 
 setwd(plots)
@@ -350,4 +354,99 @@ ggsave("WithnWithoutdiversity_nolegend.pdf",width=12,height=7)
 
 p + scale_y_continuous("Percentage of population",lim=c(0,10)) 
 ggsave("WithnWithoutdiversity_zoom.pdf",width=12,height=7)
+
+
+#############********************************************** MULITPLE RUNS *********************************************########
+dt=0.1
+tsteps<-50*(1/dt)
+omega <- 0.4
+kk <- 500
+
+n = 100
+store_M <- array(0,c(10,10, (tsteps+1)*n))
+store_D <- as.data.frame(matrix(0, (tsteps+1)*4*n, 4))
+store_D[,1] <- seq(1,(tsteps+1),1)
+colnames(store_D) <- c("t","B","U","run")
+
+for (ii in 1:n){
+  Sv<-stoch_ec_srs_funcf_mean_varsr(tsteps,home, c(kk,omega),iniv,M0,acqdistn,dt,1)
+  # Store
+  store_M[1:10,1:10,((tsteps+1) * (ii - 1) + 1 ):((tsteps+1)*ii)] <- Sv$M
+  #store_M[1:10,11,((tsteps+1) * (ii - 1) + 1 ):((tsteps+1)*ii)] <- ii
+  
+  store_D[((tsteps+1) * 4 * (ii - 1) + 1 ):((tsteps+1)*4*ii), 2] <- Sv$B
+  store_D[((tsteps+1) * 4 * (ii - 1) + 1 ):((tsteps+1)*4*ii), 3] <- Sv$U
+  store_D[((tsteps+1) * 4 * (ii - 1) + 1 ):((tsteps+1)*4*ii), 4] <- ii
+  
+}
+
+# plot
+mstore_D <- melt(store_D, id.vars = c("t","run"))
+ggplot(mstore_D, aes(x=t,y=value, colour=variable)) +
+  stat_summary(geom="ribbon", fun.ymin="min", fun.ymax="max", aes(fill=variable), alpha=0.3) +
+  theme_bw()
+ggsave(paste(n,"_stoch_runs_BU_",omega,".pdf",sep=""))
+
+# plot array
+dimnames(store_M) = list( d1=c("r1","r2","r3","r4","r5","r6","r7","r8","r9","r10"),
+                          d2=c("f1","f2","f3","f4","f5","f6","f7","f8","f9","f10"),
+                          d3 = rep(c(seq(1,(tsteps+1),1)),n))
+mm <- as.data.frame.table(store_M, responseName = "value") 
+colnames(mm) <- c("res","fit","t","value")
+#m_mm <- melt(mm, id.vars = c("t","fit"))
+ggplot(mm, aes(x=t,y=value, colour=res,group = res)) +
+  stat_summary(geom="ribbon", fun.ymin="min", fun.ymax="max", aes(fill=res), alpha=0.3) + facet_wrap(~fit) + 
+  theme_bw()
+setwd("../stoch_plots")
+ggsave(paste(n,"_stoch_runs_res",omega,".pdf",sep=""))
+
+ggplot(mm, aes(x=t,y=value, colour=fit,group = fit)) +
+  stat_summary(geom="ribbon", fun.ymin="min", fun.ymax="max", aes(fill=fit), alpha=0.3) + facet_wrap(~res) + 
+  theme_bw()
+ggsave(paste(n,"_stoch_runs_fit",omega,".pdf",sep=""))
+
+#########**** new omega ***#########
+omega <- 2
+
+store_M <- array(0,c(10,10, (tsteps+1)*n))
+store_D <- as.data.frame(matrix(0, (tsteps+1)*4*n, 4))
+store_D[,1] <- seq(1,(tsteps+1),1)
+colnames(store_D) <- c("t","B","U","run")
+
+for (ii in 1:n){
+  Sv<-stoch_ec_srs_funcf_mean_varsr(tsteps,home, c(kk,omega),iniv,M0,acqdistn,dt,1)
+  # Store
+  store_M[1:10,1:10,((tsteps+1) * (ii - 1) + 1 ):((tsteps+1)*ii)] <- Sv$M
+  #store_M[1:10,11,((tsteps+1) * (ii - 1) + 1 ):((tsteps+1)*ii)] <- ii
+  
+  store_D[((tsteps+1) * 4 * (ii - 1) + 1 ):((tsteps+1)*4*ii), 2] <- Sv$B
+  store_D[((tsteps+1) * 4 * (ii - 1) + 1 ):((tsteps+1)*4*ii), 3] <- Sv$U
+  store_D[((tsteps+1) * 4 * (ii - 1) + 1 ):((tsteps+1)*4*ii), 4] <- ii
+  
+}
+
+# plot
+mstore_D <- melt(store_D, id.vars = c("t","run"))
+ggplot(mstore_D, aes(x=t,y=value, colour=variable)) +
+  stat_summary(geom="ribbon", fun.ymin="min", fun.ymax="max", aes(fill=variable), alpha=0.3) +
+  theme_bw()
+ggsave(paste(n,"_stoch_runs_BU_",omega,".pdf",sep=""))
+
+# plot array
+dimnames(store_M) = list( d1=c("r1","r2","r3","r4","r5","r6","r7","r8","r9","r10"),
+                          d2=c("f1","f2","f3","f4","f5","f6","f7","f8","f9","f10"),
+                          d3 = rep(c(seq(1,(tsteps+1),1)),n))
+mm <- as.data.frame.table(store_M, responseName = "value") 
+colnames(mm) <- c("res","fit","t","value")
+#m_mm <- melt(mm, id.vars = c("t","fit"))
+ggplot(mm, aes(x=t,y=value, colour=res,group = res)) +
+  stat_summary(geom="ribbon", fun.ymin="min", fun.ymax="max", aes(fill=res), alpha=0.3) + facet_wrap(~fit) + 
+  theme_bw()
+setwd("../stoch_plots")
+ggsave(paste(n,"_stoch_runs_res",omega,".pdf",sep=""))
+
+ggplot(mm, aes(x=t,y=value, colour=fit,group = fit)) +
+  stat_summary(geom="ribbon", fun.ymin="min", fun.ymax="max", aes(fill=fit), alpha=0.3) + facet_wrap(~res) + 
+  theme_bw()
+ggsave(paste(n,"_stoch_runs_fit",omega,".pdf",sep=""))
 
