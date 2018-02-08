@@ -49,15 +49,10 @@ stoch_ec_srs_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist,submic){
   sumM<-colSums(colSums(bigM,dims=1)) # Gives a vector of the sums over the array for each timestep
   if(length(which(sumM > 0))){tt<-tail(which(sumM > 0), n = 1) + 1}else{tt=2} # which timestep.
   
-  #************************************************ At initial time point
-  if(acq==0 && trans==0){meanfit = 0; return(meanfit); meanres = 0; return(meanres);
-  #************************************************ Otherwise look at distribution  
-  }else{
-    #  M <- bigM[,,tt-1] # Grab the appropriate matrix for this timestep
-    #  M_new <- M;  # New matrices to update as go through
-    
-    M_new <- bigM[,,tt-1] # Grab the appropriate matrix for this timestep, use as ew matrix to update as go through
-    
+  M_new <- bigM[,,tt-1] # Grab the appropriate matrix for this timestep, use as ew matrix to update as go through
+  
+  # If there are acq and transmissions then M_new needs to be updated
+  if(acq != 0 | trans !=0){
     #**** Update 
     ##### 1) New cases - how distribute acquisitions across fitness and resistance? 
     
@@ -92,27 +87,27 @@ stoch_ec_srs_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist,submic){
     }else{new_b = 0} # no distribution of new cases
     
     #*** Assign and update M
-    # nA = number of actives left after treatment removed (affects distribution) and death (doesn't affect)
+    # nA = number of bacteria left after treatment removed (affects distribution) and death (doesn't affect)
     #M_new = M_new * nA / (nA+acq+trans) + new_a * acq / (nA+acq+trans) + new_b * trans / (nA+acq+trans) 
-    
-    M_new = M_new * nA + rMydist_a(acq, new_a) + rMydist_a(trans, new_b) # use numbers of events to select
-    M_new = M_new / (nA+acq+trans) 
-    
-    
-    #*** New matrix
-    bigM[,,tt] <- M_new # Grab the appropriate matrix for this timestep
-  
-    #*** Checks
-    print(c(rowSums(M_new), "total",sum(M_new)))
-    if(any(colSums(M_new)>1.001)){print(c(sum(M_new[,which(colSums(M_new>1.001))]),"colsums",colSums(M_new,"ERROR in colsums of M")));break}
-    if(any(rowSums(M_new)>1.001)){print(c(sum(M_new[,which(rowSums(M_new>1.001))]),"rowsums",rowSums(M_new,"ERROR in rowsums of M")));break}
-    print("here")
-    #*** Calculate mean fitness
-    meanfit = sum(colSums(bigM[,,tt])*vf)
-    print(meanfit)
-    #*** Calculate mean susceptibility
-    meanres = sum(rowSums(bigM[,,tt])*vs_rel)
+    M_new <- M_new * nA + rMydist_a(acq, new_a) + rMydist_a(trans, new_b) # use numbers of events to select
+    M_new <- M_new / (nA+acq+trans) 
   }
+  
+  #*** New matrix or same as before
+  bigM[,,tt] <- M_new # Grab the appropriate matrix for this timestep
+  
+  #*** Checks
+  if(any(colSums(M_new)>1.001)){print(c(sum(M_new[,which(colSums(M_new)>1.001)]),"colsums",colSums(M_new),"ERROR in colsums of M (too high)"));break}
+  if(any(rowSums(M_new)>1.001)){print(c(sum(M_new[,which(rowSums(M_new)>1.001)]),"rowsums",rowSums(M_new),"ERROR in rowsums of M (too high)"));break}
+  if(sum(M_new)<0.999){print(c(sum(M_new),"colsums",colSums(M_new),"rowsums",rowSums(M_new),"ERROR in sum of M (too small)"));break}
+  
+  #*** Calculate mean fitness
+  meanfit = sum(colSums(bigM[,,tt])*vf)
+  #print(c("meanres = sum of", rowSums(bigM[,,tt]),"vs_rel",vs_rel,"sum",sum(bigM[,,tt])))
+  #print(c("cc",colSums(bigM[,,tt]),"rr",rowSums(bigM[,,tt])))
+  #*** Calculate mean susceptibility
+  meanres = sum(rowSums(bigM[,,tt])*vs_rel)
+  
   
   #*** Output mean fitness, new distributions of active and latent 
   return(list(meanfit=meanfit, vs_rel=vs_rel, bigM=bigM, meanres = meanres, vf=vf))
@@ -163,11 +158,11 @@ stoch_ec_srs_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,subm
   mres<-dim(M)[1]
   
   #*** Initial foi
-  lambda<-matrix(0,1,endp)
+  lambda_v<-matrix(0,1,endp)
   
   vs_mic1 <- seq(0.1,32,length.out = mres); 
   vs_rel1 <- pmax((vs_mic1 - omega[1]),0)/vs_mic1 # constant 
-  lambda[1] = sum(colSums(acqdistn)*seq(1/nfit,1,1/nfit)) * sum(rowSums(acqdistn)*vs_rel1) * beta * B[1] # function outputs just meanfit when all popns 0
+  lambda_v[1] = sum(colSums(acqdistn)*seq(1/nfit,1,1/nfit)) * sum(rowSums(acqdistn)*vs_rel1) * beta  # function outputs just meanfit when all popns 0
   
   # Store place
   meanf<-c(0,0);
@@ -181,13 +176,15 @@ stoch_ec_srs_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,subm
     # mu is the probability in this time step that the bacteria dies
     mu_n <- runif(B[i],min = 0, max = 1)
     die_b <- length(which(mu_n < mu))
+    if(die_b > 0){print(c("death",i,die_b))}
     U[i+1] = U[i] + die_b
     B[i+1] = B[i] - die_b
     
     # Births - uniform sample. 
     # birth is the probability in this time step that the bacteria multiplies
     bi_n <- runif(B[i+1],min = 0, max = 1) # laready killed some - those that were going to die wouldn't have multiplied
-    bi_b <- length(which(bi_n < lambda[i])) # X$meanfit * X$meanres * beta => past fitness
+    bi_b <- length(which(bi_n < lambda_v[i])) # X$meanfit * X$meanres * beta => past fitness
+    if(bi_b > 0){print(c("birth",i,bi_b))}
     # Dynamics 
     U[i+1] =  U[i] - bi_b
     B[i+1] =  B[i] + bi_b
@@ -195,21 +192,26 @@ stoch_ec_srs_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,subm
     # mutations
     mut_a <- runif(bi_b, min = 0, max = 1)
     mut_e <- length(which(mut_a < mu))
+    if(mut_e > 0){print(c("mut",i,mut_e))}
     
-    print(c("num with mut", mut_e,"bi_b",bi_b))
+    #print(c("num with mut", mut_e,"bi_b",bi_b, "B[i]", B[i],"lambda",lambda_v[i]))
     # Mean fitness update and foi
+    
     X<-stoch_ec_srs_meanfit_varsr(M,mut_e,bi_b - mut_e,
-                            omega[i],B[i] - die_b,
-                            nfit,mres,acqdist,submic)
+                                  omega[i],B[i] - die_b,
+                                  nfit,mres,acqdist,submic)
     
     # Update fitness
-    if(X > 0){
-    lambda[i+1] = X$meanfit * X$meanres * beta  # no B[i] here anymore
-    
-    # Store
-    M<-X$bigM
-    meanf<-rbind(meanf,c(X$meanfit,X$meanres))
+    if(typeof(X) != "double"){
+      print(c(X$meanfit , X$meanres , beta))
+      lambda_v[i+1] = X$meanfit * X$meanres * beta  # no B[i] here anymore
+      
+      # Store
+      M<-X$bigM
+      meanf<-rbind(meanf,c(X$meanfit,X$meanres))
     }else{meanf<-rbind(meanf,c(0,0))}
+    
+    if(B[i+1] == 0){ break }
     
   }
   
@@ -222,7 +224,7 @@ stoch_ec_srs_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,subm
   # In form for plotting
   D1<-melt(All,id.vars="time")
   # What to output (storage of all vector, plus individual levels, at 5 and 50, foi s, foi r, fitness distributions and mean relative fitness over time)
-  return(list(D1=D1,U=U,B=B,lambda=lambda,M=M,meanf=meanf))
+  return(list(D1=D1,U=U,B=B,lambda_v=lambda_v,M=M,meanf=meanf))
 }
 
 ######****************************************************************************************** For multiple plots *******#####
@@ -291,8 +293,7 @@ plot_diff_acd_output_stoch <- function(acqdistn,plots,num, omega_M, submic_M, wi
   rownames(z) <- seq(1/mres,1,1/mres);colnames(z) <- seq(1,nfit,1);
   z2<-as.data.frame(melt(z)); z2$res<-seq(1/mres,1,1/mres); colnames(z2)<-c("fitness","value","res")
   p<-ggplot(z2, aes(x=res, y=value, fill=factor(fitness))) + geom_bar(stat="identity",colour="black") + facet_grid(~fitness) 
-  p<-p + scale_x_continuous("Resistance level",breaks=c(0,0.2,0.4,0.6,0.8,1)) + scale_y_continuous("Proportion") +
-    scale_fill_brewer("Fitness \nlevel",palette="Reds") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  p<-p + scale_x_continuous("Resistance level",breaks=c(0,0.2,0.4,0.6,0.8,1)) + scale_y_continuous("Proportion") + theme(axis.text.x = element_text(angle = 90, hjust = 1)) #+scale_fill_brewer("Fitness \nlevel",palette="Reds")
   p
   setwd(plots)
   ggsave(paste(num,"_",pref,"_acqdistn_",num,".pdf",sep=""),width=14,height=10)
@@ -458,13 +459,14 @@ dirac_att_5 <- function(x) { x[x==0] <- 0.5; x }
 ######**********************************************************************************  *******#####
 #sample from own distribution - decide who leaves. From http://stackoverflow.com/questions/12848736/how-to-declare-a-user-defined-distribution-in-r
 rMydist_a <- function(n,acqdistn) {
-  nn <- dim(acqdistn)[1];
-  mm <- dim(acqdistn)[2];
-  # transform acqdistn into vector
-  dim(acqdistn) <- NULL 
-  ss <- sample(x = seq(1,length(acqdistn),1), size = n, prob = acqdistn, replace=T) # Sample with given distribution
-  aa <- tabulate(ss,nbins=length(acqdistn)) / n
-  dim(aa) <- c(nn,mm)
+  if(n==0){aa <- 0}else{
+    nn <- dim(acqdistn)[1];
+    mm <- dim(acqdistn)[2];
+    # transform acqdistn into vector
+    dim(acqdistn) <- NULL 
+    ss <- sample(x = seq(1,length(acqdistn),1), size = n, prob = acqdistn, replace=T) # Sample with given distribution
+    aa <- tabulate(ss,nbins=length(acqdistn)) 
+    dim(aa) <- c(nn,mm)}
   return(aa) # Return matrix of distribution of where new are
 }
 
