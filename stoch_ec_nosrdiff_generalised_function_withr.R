@@ -170,29 +170,35 @@ stoch_ec_srs_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,subm
   
   #*** Main model dynamics
   for(i in 1:endp){
-    print(i)
+    #print(i)
     
     # Deaths - uniform sample. If less than mu then die (Monte Carlo?) 
     # mu is the probability in this time step that the bacteria dies
     mu_n <- runif(B[i],min = 0, max = 1)
     die_b <- length(which(mu_n < mu))
-    if(die_b > 0){print(c("death",i,die_b))}
+    #if(die_b > 0){print(c("death",i,die_b))}
     U[i+1] = U[i] + die_b
     B[i+1] = B[i] - die_b
     
     # Births - uniform sample. 
     # birth is the probability in this time step that the bacteria multiplies
-    bi_n <- runif(B[i+1],min = 0, max = 1) # laready killed some - those that were going to die wouldn't have multiplied
-    bi_b <- length(which(bi_n < lambda_v[i])) # X$meanfit * X$meanres * beta => past fitness
-    if(bi_b > 0){print(c("birth",i,bi_b))}
+    bi_n <- runif(B[i+1],min = 0, max = 1) # already killed some - those that were going to die wouldn't have multiplied
+    # also need to scale by U resource left:
+    bi_b <- length(which(bi_n < (U[i+1]/(U[i+1] + kk)) * lambda_v[i])) # X$meanfit * X$meanres * beta => past fitness
+    
+    #if(bi_b > 0){print(c("birth",i,bi_b))}
     # Dynamics 
-    U[i+1] =  U[i] - bi_b
-    B[i+1] =  B[i] + bi_b
+    if(  U[i] < bi_b ){ # can't have negative 
+      U[i+1] = 0
+      B[i+1] = B[i] + U[i] 
+    } else {
+      U[i+1] =  U[i] - bi_b
+      B[i+1] =  B[i] + bi_b }
     
     # mutations
     mut_a <- runif(bi_b, min = 0, max = 1)
     mut_e <- length(which(mut_a < mu))
-    if(mut_e > 0){print(c("mut",i,mut_e))}
+    #if(mut_e > 0){print(c("mut",i,mut_e))}
     
     #print(c("num with mut", mut_e,"bi_b",bi_b, "B[i]", B[i],"lambda",lambda_v[i]))
     # Mean fitness update and foi
@@ -203,7 +209,7 @@ stoch_ec_srs_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,subm
     
     # Update fitness
     if(typeof(X) != "double"){
-      print(c(X$meanfit , X$meanres , beta))
+      #print(c(X$meanfit , X$meanres , beta))
       lambda_v[i+1] = X$meanfit * X$meanres * beta  # no B[i] here anymore
       
       # Store
@@ -390,7 +396,7 @@ plot_diff_acd_output_stoch <- function(acqdistn,plots,num, omega_M, submic_M, wi
   colnames(Mb) <- c("t", "pop",1,2,3,4)
   Mbm <- melt(Mb, id.vars = c("t","pop"))
   pmb<-ggplot(Mbm, aes(x=t, y = value, colour = variable)) + geom_line() + scale_x_continuous(breaks = seq(0,tsteps,tsteps / 10), labels = dt*seq(0,tsteps,tsteps/10)) + 
-    scale_y_continuous(lim = c(0,100))
+    scale_y_continuous(lim = c(0,1000))
   ggsave(paste(num,"_",pref,"norsd_TimeSeries_Boutput_06.pdf",sep=""))
   
   # plots only proportion with "resistance" - not background initial resistance
@@ -403,38 +409,38 @@ plot_diff_acd_output_stoch <- function(acqdistn,plots,num, omega_M, submic_M, wi
   M40n[,,i] <- M40n[,,i]/sum(M40n[,,i])} # re-normalise
   
   # What happens? 
-  mm1<-c() ; mm2<-c() ; mm3<-c() ; mm4<-c() 
+  mm1r<-c() ; mm2r<-c() ; mm3r<-c() ; mm4r<-c() 
   ll<-dim(Sv1$M)[3];
   ss<-seq(0,ll,1/dt) # Don't want to grab all 
   for(i in 2:length(ss)){
-    mm01<-as.data.frame(melt(M10n[,,ss[i]])); 
-    mm02<-as.data.frame(melt(M20n[,,ss[i]])); 
-    mm03<-as.data.frame(melt(M30n[,,ss[i]])); 
-    mm04<-as.data.frame(melt(M40n[,,ss[i]])); 
-    mm01$tstep=ss[i]*dt; mm02$tstep=ss[i]*dt; mm03$tstep=ss[i]*dt; mm04$tstep=ss[i]*dt # To go to generations
-    mm1<-rbind(mm1,mm01);mm2<-rbind(mm2,mm02); mm3<-rbind(mm3,mm03) ; mm4<-rbind(mm4,mm04) 
+    mm01r<-as.data.frame(melt(M10n[,,ss[i]])); 
+    mm02r<-as.data.frame(melt(M20n[,,ss[i]])); 
+    mm03r<-as.data.frame(melt(M30n[,,ss[i]])); 
+    mm04r<-as.data.frame(melt(M40n[,,ss[i]])); 
+    mm01r$tstep=ss[i]*dt; mm02r$tstep=ss[i]*dt; mm03r$tstep=ss[i]*dt; mm04r$tstep=ss[i]*dt # To go to generations
+    mm1r<-rbind(mm1r,mm01r);mm2r<-rbind(mm2r,mm02r); mm3r<-rbind(mm3r,mm03r) ; mm4r<-rbind(mm4r,mm04r) 
   } 
-  colnames(mm1)<-c("x","y","z","t"); colnames(mm2)<-c("x","y","z","t"); colnames(mm3)<-c("x","y","z","t") ;colnames(mm4)<-c("x","y","z","t")
+  colnames(mm1r)<-c("x","y","z","t"); colnames(mm2r)<-c("x","y","z","t"); colnames(mm3r)<-c("x","y","z","t") ;colnames(mm4r)<-c("x","y","z","t")
   setwd(plots)
   
   # plots
-  p1<-ggplot(mm1[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 1,sep=""))
+  p1<-ggplot(mm1r[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 1,sep=""))
   p1<-p1 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide = FALSE)
   p1<-p1 + theme(axis.text.x = element_text(angle = 90, hjust = 1))
   p1<-p1 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
   p1
   ggsave(paste(num,"_",pref,"norsdR_Array_w=",omega1,"_06.pdf",sep=""))
-  p2<-ggplot(mm2[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 2,sep=""))
+  p2<-ggplot(mm2r[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 2,sep=""))
   p2<-p2 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide=FALSE)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
   p2<-p2 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
   p2
   ggsave(paste(num,"_",pref,"norsdR_Array_w=",omega2,"_06.pdf",sep=""))
-  p3<-ggplot(mm3[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 3,sep=""))
+  p3<-ggplot(mm3r[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 3,sep=""))
   p3<-p3 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide = FALSE)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
   p3<-p3 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
   p3
   ggsave(paste(num,"_",pref,"norsdR_Array_w=",omega3,"_06.pdf",sep=""))
-  p4<-ggplot(mm4[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 4,sep=""))
+  p4<-ggplot(mm4r[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 4,sep=""))
   p4<-p4 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide=FALSE)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
   p4<-p4 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
   p4
@@ -448,6 +454,32 @@ plot_diff_acd_output_stoch <- function(acqdistn,plots,num, omega_M, submic_M, wi
   pdf(paste(num,"_",pref,"all_norsd_Array_w_all.pdf",sep = ""),width=18,height=18)
   multiplot(go,p1,p2,pmb,p4,p3,cols=2)
   dev.off()
+  
+  # Plot proportions in each fitness / resistance level over time
+  pp<-c();
+  ll<-dim(Sv1$M)[3];
+  ss<-seq(0,ll,1/dt) # Don't want to grab all 
+  for(i in 2:length(ss)){
+    pp1<-c(ss[i]*dt,colSums(Sv1$M[,,ss[i]]), rowSums(Sv1$M[,,ss[i]]),omega1)
+    pp2<-c(ss[i]*dt,colSums(Sv2$M[,,ss[i]]), rowSums(Sv2$M[,,ss[i]]),omega2)
+    pp3<-c(ss[i]*dt,colSums(Sv3$M[,,ss[i]]), rowSums(Sv3$M[,,ss[i]]),omega3)
+    pp4<-c(ss[i]*dt,colSums(Sv4$M[,,ss[i]]), rowSums(Sv4$M[,,ss[i]]),omega4)
+    pp<-rbind(pp1,pp2,pp3,pp4);
+  } 
+  pp<-as.data.frame(pp);
+  if (mres == 5){
+    colnames(pp)<-c("t","Fitness level 1\n(low)","Fitness level 2","Fitness level 3","Fitness level 4","Fitness level 5\n(high)",
+                    "Res. level 1\n(low)","Res. level 2","Res. level 3","Res. level 4","Res. level 5\n(high)","w") 
+  }
+  if (mres == 10){
+    colnames(pp)<-c("t","Fitness level 1\n(low)","Fitness level 2","Fitness level 3","Fitness level 4","Fitness level 5","Fitness level 6","Fitness level 7","Fitness level 8","Fitness level 9","Fitness level 10\n(high)",
+                    "Res. level 1\n(low)","Res. level 2","Res. level 3","Res. level 4","Res. level 5","Res. level 6","Res. level 7","Res. level 8","Res. level 9","Res. level 10\n(high)","w"); }
+  
+  pp2<-melt(pp,id.vars = c("t","w"))
+  g<-ggplot(pp2,aes(x=t,y=value,colour=factor(w))) + facet_wrap(~variable,ncol=mres) + geom_line(size=2) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  g<-g + scale_x_continuous("Generation") + scale_y_continuous("Proportion") #+ scale_colour_manual(values=cbPalette,"Abx\nlevel",labels=c(0.05,0.1,0.2))
+  g
+  ggsave(paste(num,"_",pref,"f&r_overtime.pdf",sep = ""),width=18,height=12)
   
 }
 
