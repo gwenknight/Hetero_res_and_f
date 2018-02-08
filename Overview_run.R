@@ -33,7 +33,7 @@ dev.off(); persp(x, y, z, theta = -30, phi = 30, ticktype = "detailed")
 acqdistn<-z
 
 # Initial conditions
-iniv<-c(98,1) # Mostly space
+iniv<-c(80,20) # Mostly space
 #iniv<-c(60,39,1)
 dt=0.1
 tsteps<-500*(1/dt)
@@ -102,6 +102,14 @@ omega_M <- rbind(c(dose_h*exp(exp_dec*(0:(tsteps-1))) ),
 pref <- "Pulse_low_"
 plot_diff_acd_output(acqdistn,"~/Documents/Hetero_res_and_f/plots",01, omega_M, submic_M, wildtype,pref)
 
+####*** # (7) run with high-low or low-high ***######################################################################################################################################################################################################################################################################################################
+omega_M <- rbind(c(matrix(16,1,20*(1/dt)), matrix(0.4,1,20*(1/dt)),matrix(0,1,tsteps - 40*(1/dt))),
+                 c(matrix(0.4,1,20*(1/dt)),matrix(16,1,20*(1/dt)), matrix(0,1,tsteps - 40*(1/dt))),
+                 c(matrix(16,1,50*(1/dt)), matrix(0.4,1,50*(1/dt)),matrix(0,1,tsteps - 100*(1/dt))),
+                 c(matrix(0.4,1,50*(1/dt)),matrix(16,1,50*(1/dt)), matrix(0,1,tsteps - 100*(1/dt))))
+submic_M <- c(1,1,1,1) # Linear decline
+pref <- "Highlo_lohigh_"
+plot_diff_acd_output(acqdistn,"~/Documents/Hetero_res_and_f/plots",01, omega_M, submic_M, wildtype,pref)
 
 ####******######################################################################################################################################################################################################################################################################################################
 ####******######################################################################################################################################################################################################################################################################################################
@@ -113,14 +121,14 @@ nfit = 10;   mres = 10;
 # Array of distribution of fitness and resistance c[resistance, fitness]
 M0 <- array(0,c(mres,nfit,10))
 # M0 now needs initial condition - mostly "susceptible"
-wildtype <- c(1,1) # most fit least resistant
+wildtype <- c(1,8) # most fit least resistant
 susr <- wildtype[1]; susf <- wildtype[2]
 M0[susr,susf,1] <- 1
 
-# most low level acquisition distribution - bivariate here normal distribution with mean 0.6 and deviation 0.05
+# most low level acquisition distribution 
 x <- seq(1/mres,1,1/mres)
 y <- seq(1/nfit,1,1/nfit)
-f <- function(x, y) dmvnorm(cbind(x, y), mean = c(0.05, 0.05),sigma = diag(2)/10)
+f <- function(x, y) dmvnorm(cbind(x, y), mean = c(0.05, 0.8),sigma = diag(2)/10)
 z <- outer(x, y, FUN = f); z <- z/sum(z) # Generate and normalise
 dev.off(); persp(x, y, z, theta = 60, phi = 30, ticktype = "detailed")
 acqdistn<-z
@@ -183,5 +191,14 @@ omega_M <- rbind(c(dose_h*exp(exp_dec*(0:(tsteps-1))) ),
                    fn_pulse,fn_pulse,fn_pulse,fn_pulse,fn_pulse,fn_pulse, dose_h*exp(exp_dec*(0:(tsteps-11*(gap_doses+1)-1))) ) )
 
 pref <- "Pulse_low_"
+plot_diff_acd_output(acqdistn,"~/Documents/Hetero_res_and_f/plots",02, omega_M, submic_M, wildtype,pref)
+
+####*** # (7) run with high-low or low-high ***######################################################################################################################################################################################################################################################################################################
+omega_M <- rbind(c(matrix(16,1,20*(1/dt)), matrix(0.4,1,20*(1/dt)),matrix(0,1,tsteps - 40*(1/dt))),
+                 c(matrix(0.4,1,20*(1/dt)),matrix(16,1,20*(1/dt)), matrix(0,1,tsteps - 40*(1/dt))),
+                 c(matrix(16,1,50*(1/dt)), matrix(0.4,1,50*(1/dt)),matrix(0,1,tsteps - 100*(1/dt))),
+                 c(matrix(0.4,1,50*(1/dt)),matrix(16,1,50*(1/dt)), matrix(0,1,tsteps - 100*(1/dt))))
+submic_M <- c(1,1,1,1) # Linear decline
+pref <- "Highlo_lohigh_"
 plot_diff_acd_output(acqdistn,"~/Documents/Hetero_res_and_f/plots",02, omega_M, submic_M, wildtype,pref)
 
