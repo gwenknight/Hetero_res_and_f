@@ -464,7 +464,7 @@ plot_diff_acd_output_stoch <- function(acqdistn,plots,num, omega_M, submic_M, wi
     pp2<-c(ss[i]*dt,colSums(Sv2$M[,,ss[i]]), rowSums(Sv2$M[,,ss[i]]),omega2)
     pp3<-c(ss[i]*dt,colSums(Sv3$M[,,ss[i]]), rowSums(Sv3$M[,,ss[i]]),omega3)
     pp4<-c(ss[i]*dt,colSums(Sv4$M[,,ss[i]]), rowSums(Sv4$M[,,ss[i]]),omega4)
-    pp<-rbind(pp1,pp2,pp3,pp4);
+    pp<-rbind(pp,pp1,pp2,pp3,pp4);
   } 
   pp<-as.data.frame(pp);
   if (mres == 5){
