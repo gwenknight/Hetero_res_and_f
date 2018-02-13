@@ -25,9 +25,10 @@ ec_srs_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist,submic){
   vs_mic <- seq(0.1,32,length.out = m) 
   
   ## How does growth rate change sub-mic? 
-  if(submic == 1){
+  #if(submic == 1){
     # Vector of resistance levels in face of antibiotic treatment trate
-    vs_rel <- pmax((vs_mic - trate),0)/vs_mic} # constant 
+    vs_rel <- pmax((vs_mic - trate),0)/vs_mic# } # constant 
+    # if submic != 1: use vs_rel as base template
   if(submic == 2){
     # # FLAT AND THEN DROPS LINEARLY AT 9/10 of MIC to 0
     vs_rel_multiply <- dirac_att(vs_mic - trate) # new function (see below): 0 if vs_mic < trate, 1 if greater
@@ -266,8 +267,8 @@ plot_diff_acd_output <- function(acqdistn,plots,num, omega_M, submic_M, wildtype
   rownames(z) <- seq(1/mres,1,1/mres);colnames(z) <- seq(1,nfit,1);
   z2<-as.data.frame(melt(z)); z2$res<-seq(1/mres,1,1/mres); colnames(z2)<-c("fitness","value","res")
   p<-ggplot(z2, aes(x=res, y=value, fill=factor(fitness))) + geom_bar(stat="identity",colour="black") + facet_grid(~fitness) 
-  p<-p + scale_x_continuous("Resistance-Fitness level",breaks=c(0,0.2,0.4,0.6,0.8,1),labels = c(1,2,4,6,8,10)) + scale_y_continuous("Proportion") +
-    scale_fill_brewer("Growth-\nFitness \nlevel",palette="Reds") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  p<-p + scale_x_continuous("Resistance level",breaks=c(0,0.2,0.4,0.6,0.8,1)) + scale_y_continuous("Proportion") +
+    scale_fill_brewer("Fitness \nlevel",palette="Reds") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
   p
   setwd(plots)
   ggsave(paste(num,"_",pref,"_acqdistn_",num,".pdf",sep=""),width=14,height=10)
@@ -321,28 +322,28 @@ plot_diff_acd_output <- function(acqdistn,plots,num, omega_M, submic_M, wildtype
   p1<-ggplot(mm1[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 1,sep=""))
   p1<-p1 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide = FALSE)
   p1<-p1 + theme(axis.text.x = element_text(angle = 90, hjust = 1))
-  p1<-p1 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
+  p1<-p1 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative growth-fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Relative resistance-fitness levels",labels=c("Most","Least"))
   p1
-  ggsave(paste(num,"_",pref,"norsd_Array_w=", omega1,"_06.pdf",sep=""))
+  ggsave(paste(num,"_",submic_M[1],"_",pref,"norsd_Array_w=", omega1,"_06.pdf",sep=""))
   p2<-ggplot(mm2[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 2,sep=""))
   p2<-p2 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide=FALSE)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
-  p2<-p2 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
+  p2<-p2 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative growth-fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Relative resistance-fitness levels",labels=c("Most","Least"))
   p2
-  ggsave(paste(num,"_",pref,"norsd_Array_w=",omega2,"_06.pdf",sep=""))
+  ggsave(paste(num,"_",submic_M[2],"_",pref,"norsd_Array_w=",omega2,"_06.pdf",sep=""))
   p3<-ggplot(mm3[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 3,sep=""))
   p3<-p3 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide = FALSE)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
-  p3<-p3 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
+  p3<-p3 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative growth-fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Relative resistance-fitness levels",labels=c("Most","Least"))
   p3
-  ggsave(paste(num,"_",pref,"norsd_Array_w=",omega3,"_06.pdf",sep=""))
+  ggsave(paste(num,"_",submic_M[3],"_",pref,"norsd_Array_w=",omega3,"_06.pdf",sep=""))
   p4<-ggplot(mm4[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 4,sep=""))
   p4<-p4 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide=FALSE)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
-  p4<-p4 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
+  p4<-p4 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative growth-fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Relative resistance-fitness levels",labels=c("Most","Least"))
   p4
-  ggsave(paste(num,"_",pref,"norsd_Array_w=",omega4,"_06.pdf",sep=""))
+  ggsave(paste(num,"_",submic_M[4],"_",pref,"norsd_Array_w=",omega4,"_06.pdf",sep=""))
   
   
   setwd(plots)
-  pdf(paste(num,"_",pref,"norsd_Array_w_all.pdf",sep=""),width=18,height=18)
+  pdf(paste(num,"_",submic_M[1],"_",pref,"norsd_Array_w_all.pdf",sep=""),width=18,height=18)
   multiplot(p1,p2,p4,p3,cols=2)
   dev.off()
   
@@ -357,18 +358,20 @@ plot_diff_acd_output <- function(acqdistn,plots,num, omega_M, submic_M, wildtype
   Msrm <- melt(Musr, id.vars = c("t","pop"))
   facet_names <- c(`0` = "U", `1` = "B", `3` = "mean fit", `4` = "mean res", `5` = "Highest fit/res")
   ggplot(Msrm, aes(x=t, y = value, colour = variable)) + geom_line() + facet_wrap(~pop,labeller = as_labeller(facet_names), scales = "free")
-  ggsave(paste(num,"_",pref,"norsd_TimeSeries_output_06.pdf",sep=""))
+  ggsave(paste(num,"_",submic_M[1],"_",pref,"norsd_TimeSeries_output_06.pdf",sep=""))
   # number in highest fitness changes but mean r and f don't? 
   
   # How is the bacterial load affected? want to control.
   colnames(Mb) <- c("t", "pop",1,2,3,4)
   Mbm <- melt(Mb, id.vars = c("t","pop"))
-  pmba<-ggplot(Mbm, aes(x=t, y = value, colour = variable)) + geom_line() + scale_x_continuous(breaks = seq(0,tsteps,tsteps / 10), labels = dt*seq(0,tsteps,tsteps/10)) + 
-    scale_y_continuous(lim = c(0,100), "Percentage") + geom_hline(yintercept = 1)  
-  ggsave(paste(num,"_",pref,"norsd_TimeSeries_Boutput_06.pdf",sep=""))
-  pmb<-ggplot(Mbm, aes(x=t, y = value, colour = variable)) + geom_line() + scale_x_continuous(breaks = seq(0,tsteps,tsteps / 10), labels = dt*seq(0,tsteps,tsteps/10)) + 
-    scale_y_continuous(lim = c(0,100), "Percentage")
+  pmb<-ggplot(Mbm, aes(x=t, y = value, colour = variable)) + geom_line(size = 2) + scale_x_continuous(breaks = seq(0,tsteps,tsteps / 10), labels = dt*seq(0,tsteps,tsteps/10)) + 
+    scale_y_continuous(lim = c(0,100)) + guides(colour=FALSE)
+  ggsave(paste(num,"_",submic_M[1],"_",pref,"norsd_TimeSeries_Boutput_06.pdf",sep=""))
   
+  pdf(paste(num,"_",submic_M[1],"_",pref,"all_norsd_Array_w_all.pdf",sep = ""),width=18,height=18)
+  multiplot(go,p1,p2,pmb,p4,p3,cols=2)
+  dev.off()
+
   # plots only proportion with "resistance" - not background initial resistance
   M10n <- Sv1$M;M20n <- Sv2$M;M30n <- Sv3$M;M40n <- Sv4$M
   susr <- wildtype[1]; susf <- wildtype[2]
@@ -397,33 +400,59 @@ plot_diff_acd_output <- function(acqdistn,plots,num, omega_M, submic_M, wildtype
   p1<-ggplot(mm1[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 1,sep=""))
   p1<-p1 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide = FALSE)
   p1<-p1 + theme(axis.text.x = element_text(angle = 90, hjust = 1))
-  p1<-p1 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
+  p1<-p1 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative growth-fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Relative resistance-fitness levels",labels=c("Most","Least"))
   p1
-  ggsave(paste(num,"_",pref,"norsdR_Array_w=",omega1,"_06.pdf",sep=""))
+  ggsave(paste(num,"_",submic_M[1],"_",pref,"norsdR_Array_w=",omega1,"_06.pdf",sep=""))
   p2<-ggplot(mm2[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 2,sep=""))
   p2<-p2 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide=FALSE)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
-  p2<-p2 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
+  p2<-p2 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative growth-fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Relative resistance-fitness levels",labels=c("Most","Least"))
   p2
-  ggsave(paste(num,"_",pref,"norsdR_Array_w=",omega2,"_06.pdf",sep=""))
+  ggsave(paste(num,"_",submic_M[2],"_",pref,"norsdR_Array_w=",omega2,"_06.pdf",sep=""))
   p3<-ggplot(mm3[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 3,sep=""))
   p3<-p3 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide = FALSE)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
-  p3<-p3 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
+  p3<-p3 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative growth-fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Relative resistance-fitness levels",labels=c("Most","Least"))
   p3
-  ggsave(paste(num,"_",pref,"norsdR_Array_w=",omega3,"_06.pdf",sep=""))
+  ggsave(paste(num,"_",submic_M[3],"_",pref,"norsdR_Array_w=",omega3,"_06.pdf",sep=""))
   p4<-ggplot(mm4[w,],aes(x,y,fill=z))  + facet_wrap( ~ t, ncol=3) + ggtitle(paste("w = ", 4,sep=""))
   p4<-p4 + scale_fill_gradient("Proportion", limits=c(0,1),low="white", high="red",guide=FALSE)+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
-  p4<-p4 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Resistance levels",labels=c("Most","Least"))
+  p4<-p4 + geom_tile() + scale_y_continuous(breaks=c(1,nfit),"Relative growth-fitness levels",labels=c("Least","Most")) + scale_x_continuous(breaks=c(mres,1),"Relative resistance-fitness levels",labels=c("Most","Least"))
   p4
-  ggsave(paste(num,"_",pref,"norsdR_Array_w=",omega4,"_06.pdf",sep=""))
+  ggsave(paste(num,"_",submic_M[4],"_",pref,"norsdR_Array_w=",omega4,"_06.pdf",sep=""))
   
   setwd(plots)
-  pdf(paste(num,"_",pref,"norsdR_Array_w_all.pdf",sep=""),width=18,height=18)
+  pdf(paste(num,"_",submic_M[1],"_",pref,"norsdR_Array_w_all.pdf",sep=""),width=18,height=18)
   multiplot(p1,p2,p4,p3,cols=2)
   dev.off()
   
-  pdf(paste(num,"_",pref,"all_norsd_Array_w_all.pdf",sep = ""),width=18,height=18)
+  pdf(paste(num,"_",submic_M[1],"_",pref,"all_norsdR_Array_w_all.pdf",sep = ""),width=18,height=18)
   multiplot(go,p1,p2,pmb,p4,p3,cols=2)
   dev.off()
+  
+  # Plot proportions in each fitness / resistance level over time
+  pp<-c();
+  ll<-dim(Sv1$M)[3];
+  ss<-seq(0,ll,1/dt) # Don't want to grab all 
+  for(i in 2:length(ss)){
+    pp1<-c(ss[i]*dt,colSums(Sv1$M[,,ss[i]]), rowSums(Sv1$M[,,ss[i]]),1)
+    pp2<-c(ss[i]*dt,colSums(Sv2$M[,,ss[i]]), rowSums(Sv2$M[,,ss[i]]),2)
+    pp3<-c(ss[i]*dt,colSums(Sv3$M[,,ss[i]]), rowSums(Sv3$M[,,ss[i]]),3)
+    pp4<-c(ss[i]*dt,colSums(Sv4$M[,,ss[i]]), rowSums(Sv4$M[,,ss[i]]),4)
+    pp<-rbind(pp,pp1,pp2,pp3,pp4);
+  } 
+  pp<-as.data.frame(pp);
+  if (mres == 5){
+    colnames(pp)<-c("t","Growth level 1\n(low)","Growth level 2","Growth level 3","Growth level 4","Growth level 5\n(high)",
+                    "Res. level 1\n(low)","Res. level 2","Res. level 3","Res. level 4","Res. level 5\n(high)","w") 
+  }
+  if (mres == 10){
+    colnames(pp)<-c("t","Growth level 1\n(low)","Growth level 2","Growth level 3","Growth level 4","Growth level 5","Growth level 6","Growth level 7","Growth level 8","Growth level 9","Growth level 10\n(high)",
+                    "Res. level 1\n(low)","Res. level 2","Res. level 3","Res. level 4","Res. level 5","Res. level 6","Res. level 7","Res. level 8","Res. level 9","Res. level 10\n(high)","w"); }
+  
+  pp2<-melt(pp,id.vars = c("t","w"))
+  g<-ggplot(pp2,aes(x=t,y=value,colour=factor(w))) + geom_line(size=2) + facet_wrap(~variable,ncol=mres) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  g<-g + scale_x_continuous("Generation") + scale_y_continuous("Proportion") + scale_colour_discrete("Treatment regimen")
+  g
+  ggsave(paste(num,"_",submic_M[1],"_",pref,"f&r_overtime.pdf",sep = ""),width=18,height=12)
   
 }
 
