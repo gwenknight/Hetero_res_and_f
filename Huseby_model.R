@@ -85,3 +85,5 @@ plot(huseby$MIC, huseby$Fitness)
 h<-hist(huseby$MIC,breaks=seq(0,32,0.5))
 h<-hist(huseby$Fitness,breaks=seq(0,32,0.5))
 for(i in 1:)
+  
+  

@@ -3,7 +3,8 @@
 ##### Code to run generalised function and examples
 
 ##*** Libraries needed
-library(mvtnorm);library(plyr); library(ggplot2);library(reshape2);library(deSolve);library(grid);library(gtools); library(directlabels); library(mvtnorm)
+library(mvtnorm);library(plyr); library(ggplot2);library(reshape2); library(tidyverse)
+library(deSolve);library(grid);library(gtools); library(directlabels);
 theme_set(theme_gray(base_size = 24)); 
 ##*** Locations
 home<-"~/Documents/Hetero_res_and_f/"
@@ -326,6 +327,12 @@ ggsave("WithnWithoutdiversity_zoom.pdf",width=12,height=7)
 pp2n<-pp2[7501:15000,]
 w<-intersect(which(pp2n$w==5),c(which(pp2n$t==100),which(pp2n$t==200),which(pp2n$t==300),which(pp2n$t==400),which(pp2n$t==500)))
 ggplot(pp2n[w,], aes(x=t, y= value,colour=factor(variable))) + geom_point(aes(shape = factor(variable)),size=5)
+
+ggplot(pp2 %>% filter(t %in% c(100,200,300,400,500,500), grepl('Res.', variable)), aes(x=t, y= value,colour=factor(variable))) + 
+  geom_point(aes(shape = factor(variable)),size=5) + 
+  facet_wrap(~w) + 
+  scale_y_continuous(trans='log10', limits = c(0.0001,1), breaks = c(1,0.1,0.01,0.001))
+
 
 library(data.table)
 drrm2n <- data.table(pp2n[w,])

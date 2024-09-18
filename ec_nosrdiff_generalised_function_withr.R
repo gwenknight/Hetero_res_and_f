@@ -35,7 +35,7 @@ ec_srs_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist,submic){
     for(i in 1:length(vs_mic)){ if((0.9*vs_mic[i]) > trate){ # if below 9/10ths of MIC then relative growth flat
       vs_rel[i] = 1} else {
         vs_rel[i] = 10*(vs_mic[i] - trate) / vs_mic[i]} } # else linear decline to 0 at MIC
-    vs_rel <- vs_rel_multiply * vs_rel}
+    vs_rel <- vs_rel_multiply * vs_rel} ## doesn't work? 
   if(submic == 3){
     # FLAT AND THEN DROPS LINEARLY AT 9/10 of MIC to 0.5
     vs_rel_multiply <- dirac_att(vs_mic - trate) # new function (see below): 0 if vs_mic < trate, 1 if greater
@@ -45,6 +45,17 @@ ec_srs_meanfit_varsr=function(bigM,acq,trans,trate,nA,n,m,acqdist,submic){
     vs_rel <- vs_rel_multiply * vs_rel
     vs_rel <- dirac_att_5(vs_rel) # Make 0.5 instead of 0 above MIC
   }
+  
+    ### Make pharmacodynamics function 
+    phi_max = 1
+    phi_min = -1
+    kappa = 0.3
+    trate <- seq(0,100,0.1)
+    phi = ((phi_max - phi_min)*(trate / vs_mic)^kappa) / ((trate / vs_mic)^kappa - phi_min/phi_max)
+  
+    
+      
+    
   
   # Which column of M? last that is non-zero plus one for this timestep
   sumM<-colSums(colSums(bigM,dims=1)) # Gives a vector of the sums over the array for each timestep
@@ -174,9 +185,13 @@ ec_srs_funcf_mean_varsr=function(endp,home,vary,initial,M0,acqdist,dt,submic){
     lambda = lambda_v[i]
     
     #print(c("ks,kr",ks,kr,X$meanfit,lambdas))
-    # Dynamics
+    # # Dynamics
     U[i+1] =  U[i] + mu*B[i] - lambda*(U[i]/(U[i] + kk))
-    B[i+1] =  B[i] + lambda*(U[i]/(U[i] + kk)) - mu*B[i] 
+    B[i+1] =  B[i] + lambda*(U[i]/(U[i] + kk)) - mu*B[i]
+    
+    # Dynamics
+    # U[i+1] =  U[i] - lambda*(U[i]/(U[i] + kk))
+    # B[i+1] =  B[i] + lambda*(U[i]/(U[i] + kk)) 
     
     # Mean fitness update and foi
     X<-ec_srs_meanfit_varsr(M,eps*lambda*(U[i]/(U[i] + kk)),(1-eps)*lambda*(U[i]/(U[i] + kk)),
@@ -295,7 +310,7 @@ plot_diff_acd_output <- function(acqdistn,plots,num, omega_M, submic_M, wildtype
     }
   }
   
-  ### What does omega do? 
+  ### What does omega do? TREATMENT exposure
   momegam <- melt(omegam,id.vars = "time")
   go<-ggplot(momegam,aes(x=time,y=value,colour=variable)) + geom_line(size=2) + scale_x_continuous(breaks = seq(0,tsteps,tsteps / 10), labels = dt*seq(0,tsteps,tsteps/10)) + scale_y_continuous("Omega") + scale_color_discrete("")
   setwd(plots)
